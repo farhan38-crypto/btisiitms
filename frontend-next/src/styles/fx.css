@@ -1,0 +1,94 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Shared depth and motion for every layout: one-tap problem chips, a 3D tilt on summary
+   cards, entrance and chart animations, hover lift, the 16:9 embedded map, and a richer
+   light scheme (soft colour in the canvas, layered shadows, coloured accents).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* one-tap common problems (both report pages) */
+.preset-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.preset { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); font-size: 13px; }
+.preset svg { color: var(--ink-3); }
+.preset:hover { color: var(--ink); border-color: var(--rim); }
+.preset[data-on] { color: var(--ink); border-color: var(--a); background: var(--sel); } .preset[data-on] svg { color: var(--a); }.preset { transition: transform .25s var(--spring), border-color .2s, background-color .2s, color .2s; }
+.preset:hover { transform: translateY(-1px); }
+.preset:active { transform: scale(.97); }
+.page-report .preset-row { margin: 4px 0 14px; }
+
+/* the embedded campus map keeps one shape everywhere */
+.campus-map.map-embed { height: auto; aspect-ratio: 16 / 9; }
+.campus-map.map-compact, .campus-map.map-embed { min-height: 220px; }
+
+/* 3D tilt (lib/tilt.ts sets the angles) */
+[data-tilt] { position: relative; transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px));
+  transition: transform .45s var(--ease-out), box-shadow .3s, border-color .2s; }
+[data-tilt]:hover { --lift: -4px; transition: transform .14s linear, box-shadow .3s, border-color .2s; }
+[data-tilt]::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .3s;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgb(255 255 255 / .13), transparent 62%); }
+[data-tilt]:hover::after { opacity: 1; }
+
+/* hover feedback on everything you can open */
+.m-card { transition: transform .35s var(--ease-out), box-shadow .3s, border-color .2s, background-color .3s; }
+.m-list a, .m-bars a, .m-legend a { transition: background-color .15s, transform .25s var(--ease-out); }
+.m-list a:hover, .m-bars a:hover { transform: translateX(3px); }
+.m-alert { transition: transform .3s var(--ease-out), border-color .2s; }
+.m-alert:hover { transform: translateY(-2px); }
+.m-alert:hover > svg:last-child { transform: translateX(3px); }
+.m-alert > svg:last-child { transition: transform .25s var(--ease-out); }
+.m-link svg { transition: transform .25s var(--ease-out); }
+.m-link:hover svg:last-child { transform: translateX(3px); }
+.m-fab { transition: background-color .2s, box-shadow .25s, transform .3s var(--spring); }
+.m-fab:hover { transform: translateY(-1px); }
+.m-fab:active { transform: scale(.97); }
+.tile { transition: transform .25s var(--spring), border-color .2s, background-color .2s; }
+.tile:hover { transform: translateY(-2px); }
+.stat { transition: background-color .15s, transform .25s var(--ease-out); }
+.stat:hover { transform: translateY(-1px); }
+
+/* entrances: the page builds up once, top to bottom */
+@keyframes fx-rise { from { opacity: 0; transform: translateY(18px) scale(.985); } }
+@keyframes fx-grow { from { transform: scaleY(0); } }
+@keyframes fx-sweep { from { stroke-dashoffset: 100; } }
+.m-page > *, .m-kpis > * { animation: fx-rise .7s var(--ease-out) backwards; }
+.m-page > :nth-child(2) { animation-delay: .04s; } .m-page > :nth-child(3) { animation-delay: .16s; }
+.m-page > :nth-child(4) { animation-delay: .24s; } .m-page > :nth-child(5) { animation-delay: .32s; } .m-page > :nth-child(n+6) { animation-delay: .4s; }
+.m-kpis > :nth-child(1) { animation-delay: .06s; } .m-kpis > :nth-child(2) { animation-delay: .12s; }
+.m-kpis > :nth-child(3) { animation-delay: .18s; } .m-kpis > :nth-child(4) { animation-delay: .24s; }
+.mbar path { transform-box: fill-box; transform-origin: 50% 100%; animation: fx-grow .8s var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 24ms + .25s); }
+.mgauge-fill { stroke-dasharray: 100 100; animation: fx-sweep 1.4s var(--ease-out) backwards .3s; }
+@media (prefers-reduced-motion: reduce) {
+  .m-page > *, .m-kpis > *, .mbar path, .mgauge-fill { animation: none; }
+  [data-tilt], [data-tilt]:hover { transform: none; }
+}
+:root[data-motion="calm"] :is(.m-page > *, .m-kpis > *, .mbar path, .mgauge-fill) { animation: none; }
+
+/* ───── light themes: more colour and depth (not the high-visibility ones) ───── */
+:root[data-scheme="light"]:not([data-family="readability"]) {
+  & body::after { content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(55vw 45vh at 0% 0%, color-mix(in srgb, var(--a) 24%, transparent), transparent 70%),
+      radial-gradient(45vw 45vh at 100% 6%, color-mix(in srgb, var(--b) 20%, transparent), transparent 70%),
+      radial-gradient(60vw 50vh at 75% 100%, color-mix(in srgb, var(--c, var(--a)) 18%, transparent), transparent 70%); }
+  & :is(.surface, .m-card, .metric, .stats, .frame, .m-drawer) {
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .9), 0 1px 2px rgb(20 20 60 / .06), 0 14px 34px -18px color-mix(in srgb, var(--a) 38%, rgb(20 20 60 / .28)); }
+  & :is(a.m-card, a.metric):hover {
+    box-shadow: inset 0 1px 0 #fff, 0 2px 4px rgb(20 20 60 / .06), 0 26px 48px -20px color-mix(in srgb, var(--k, var(--a)) 50%, rgb(20 20 60 / .3)); }
+  & [data-tilt]::after { background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), color-mix(in srgb, var(--k, var(--a)) 14%, rgb(255 255 255 / .5)), transparent 62%); }
+  & .m-kpi-icon { background: linear-gradient(140deg, color-mix(in srgb, var(--k, var(--a)) 22%, #fff), color-mix(in srgb, var(--k, var(--a)) 8%, #fff));
+    box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--k, var(--a)) 22%, transparent), 0 6px 14px -8px var(--k, var(--a)); }
+  & .btn-primary, & .m-range button[data-on], & .m-toggle button[data-on] { background: linear-gradient(120deg, var(--a), color-mix(in srgb, var(--b) 75%, var(--a))); color: var(--on-accent);
+    box-shadow: 0 8px 18px -10px var(--a); }
+  & .mbar-on { fill: url(#m-grad); }
+  & .mbar-off { fill: color-mix(in srgb, var(--a) 22%, transparent); }
+  & .m-item[data-on] svg, & .nav-item[data-on] svg { color: var(--a); }
+  & .m-pill, & .nav-pill { background: linear-gradient(120deg, color-mix(in srgb, var(--a) 16%, transparent), color-mix(in srgb, var(--b) 12%, transparent)); }
+  & .m-fab { background: linear-gradient(120deg, color-mix(in srgb, var(--a) 20%, #fff), color-mix(in srgb, var(--b) 16%, #fff)); }
+  & .m-kpi-value { background: linear-gradient(180deg, var(--ink), color-mix(in srgb, var(--ink) 75%, var(--k, var(--a)))); -webkit-background-clip: text; background-clip: text; color: transparent; }
+}
+:root[data-scheme="light"][data-layout="material"]:not([data-family="readability"]) .m-range button[data-on] { color: #fff; }
+.page.m-page { max-width: 1400px; }
+
+/* Performance: cards in the page only ever sit over the soft background, where a blur looks
+   the same as none, yet each one was re-blurred on every scroll frame. Keep the frosting
+   for things that float over real content (bars, menus, dialogs, cards on the map). */
+.page :is(.surface, .m-card, .glass):not(.campus-map *, .campus-map) { -webkit-backdrop-filter: none; backdrop-filter: none; }
+:root[data-scheme="dark"] .page :is(.surface, .m-card):not(.campus-map *) { background-color: color-mix(in srgb, var(--glass-solid) 30%, transparent); }

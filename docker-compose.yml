@@ -1,0 +1,79 @@
+# BITS reports with Docker: needs only Docker Desktop (no Python, Node or MongoDB).
+#   docker compose up --build                     then open http://localhost:3000
+#   docker compose --profile classic up --build   also the old (classic) app on http://localhost:3001
+#   docker compose down                           to stop (data is kept in the mongo_data volume)
+# Settings come from the .env.example files, overridden by backend/.env, frontend-next/.env and
+# frontend/.env when those exist (the Google sign-in client ID can live in either frontend file).
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build: ./backend
+    env_file:
+      - path: ./backend/.env.example
+        required: true
+      - path: ./backend/.env
+        required: false
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+    command: ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/server.py:/app/server.py
+      - ./backend/logs:/app/logs
+    depends_on:
+      - mongo
+
+  # The app (frontend-next). Edits to src/ show up live.
+  frontend:
+    build: ./frontend-next
+    env_file:
+      - path: ./frontend-next/.env.example
+        required: true
+      - path: ./frontend-next/.env
+        required: false
+      - path: ./frontend/.env
+        required: false
+    environment:
+      # The browser calls /api on the same address; the dev server forwards it to the backend container.
+      BACKEND_URL: http://backend:8000
+      VITE_POLL: "1"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend-next/src:/app/src
+      - ./frontend-next/public:/app/public
+      - ./frontend-next/index.html:/app/index.html
+    depends_on:
+      - backend
+
+  # The old app, kept as a backup. Only with: docker compose --profile classic up
+  frontend-classic:
+    profiles: ["classic"]
+    build: ./frontend
+    env_file:
+      - path: ./frontend/.env.example
+        required: true
+      - path: ./frontend/.env
+        required: false
+    environment:
+      REACT_APP_BACKEND_URL: ""
+      BACKEND_PROXY_TARGET: http://backend:8000
+      WATCHPACK_POLLING: "true"
+      BROWSER: none
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:

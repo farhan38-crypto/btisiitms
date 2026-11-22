@@ -1,0 +1,116 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Phones (≤ 760 px). No top bar: a floating glass tab bar sits at the bottom in thumb
+   reach (iOS 26 / Linear mobile pattern), Report is the raised centre action, and every
+   popover or dialog becomes a bottom sheet (ui/Overlay.tsx). Pages get a safe bottom
+   margin so nothing hides behind the bar.
+   ───────────────────────────────────────────────────────────────────────────── */
+.tabbar { display: none; }
+
+@media (max-width: 760px) {
+  :root { --page-top: max(18px, env(safe-area-inset-top)); --tab-h: 64px; }
+  body { font-size: calc(15.5px * var(--text-scale, 1)); }
+  .page { padding: var(--page-top) 14px calc(var(--tab-h) + 40px + env(safe-area-inset-bottom)); gap: 16px; }
+  .page-head h1 { font-size: 30px; }
+  .page-head { gap: 12px; }
+  .shell-banners { padding: 0 14px; }
+  .shell-banners .banner { margin: 14px 0 -6px; }
+
+  /* tab bar */
+  .tabbar { display: flex; position: fixed; z-index: 50; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom));
+    height: var(--tab-h); padding: 6px; border-radius: 26px; align-items: center; justify-content: space-between;
+    transition: height .35s var(--ease-out), left .35s var(--ease-out), right .35s var(--ease-out), bottom .35s var(--ease-out); }
+  .tabbar[data-min] { --tab-h: 52px; left: 40px; right: 40px; }
+  .tabbar[data-min] .tab-label { opacity: 0; height: 0; }
+  .tab { position: relative; flex: 1; display: grid; justify-items: center; gap: 2px; padding: 6px 0; border: 0; background: none; color: var(--ink-3); border-radius: 20px; min-width: 0; }
+  .tab[data-on] { color: var(--ink); }
+  .tab-pill { position: absolute; inset: 0 4px; border-radius: 20px; background: var(--glass-hi); box-shadow: inset 0 1px 0 rgb(255 255 255 / .14), 0 0 0 1px var(--rim); }
+  .tab-icon { position: relative; z-index: 1; display: grid; place-items: center; height: 24px; }
+  .tab-icon .avatar { width: 24px !important; height: 24px !important; font-size: 9.5px !important; }
+  .tab-icon .dot-count { top: -4px; right: -9px; }
+  .tab-label { position: relative; z-index: 1; font-size: 10.5px; font-weight: 650; transition: opacity .2s, height .3s; overflow: hidden; height: 13px; line-height: 13px; }
+  .tab-cta { flex: none; display: grid; place-items: center; width: 52px; height: 52px; margin: 0 4px; border-radius: 18px; color: var(--on-accent);
+    background: linear-gradient(135deg, var(--a), var(--b)); box-shadow: 0 10px 26px -10px var(--a); transition: transform .3s var(--spring), width .3s, height .3s; }
+  :root:not([data-family="glass"]) .tab-cta { background: var(--a); }
+  .tab-cta:active { transform: scale(.92); }
+  .tabbar[data-min] .tab-cta { width: 44px; height: 40px; border-radius: 14px; }
+  .sheet-menu .menu-item { height: 48px; font-size: 15.5px; }
+
+  /* toasts sit above the bar */
+  [data-sonner-toaster][data-y-position="top"] { top: max(12px, env(safe-area-inset-top)) !important; }
+
+  /* overview */
+  .hero { padding-top: 6px; } .hero h1 { font-size: 34px; }
+  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .metric { padding: 14px 16px 16px; } .metric-value { font-size: 34px; }
+  .panel { padding: 12px; border-radius: calc(var(--radius, 24px) - 2px); }
+  .panel-head { padding: 4px 4px 12px; }
+
+  /* incidents */
+  .toolbar { gap: 8px; }
+  .search-field { flex: 1 1 100%; height: 42px; }
+  .toolbar-end { margin-left: 0; flex: 1; justify-content: flex-end; }
+  .toolbar-end .select { width: auto; flex: 1; }
+  .views-bar { margin: 0 -14px; padding: 4px 14px; }
+  .ilist { padding: 4px; }
+  .irow { padding: 12px 10px; }
+  .irow-line { flex-direction: column; gap: 1px; } .irow-line b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .irow-end { align-self: flex-start; }
+
+  /* incident page: actions become a bottom bar above the tabs */
+  .page-incident .back { margin-bottom: 0; }
+  .iv { gap: 16px; }
+  .iv-title { gap: 12px; } .iv-title h1 { font-size: 25px; }
+  .iv-head .actions { position: fixed; z-index: 45; left: 12px; right: 12px; bottom: calc(var(--tab-h) + 20px + env(safe-area-inset-bottom));
+    padding: 8px; border-radius: 22px; background: linear-gradient(var(--glass-solid), var(--glass-solid)), var(--base); border: 1px solid var(--rim);
+    box-shadow: 0 20px 50px -20px rgb(0 0 0 / .7); flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .iv-head .actions .btn { flex: none; height: 40px; }
+  .iv-head .actions .btn-primary { flex: 1 0 auto; }
+  .page-incident { padding-bottom: calc(var(--tab-h) + 110px + env(safe-area-inset-bottom)); }
+  .rail { overflow-x: auto; scrollbar-width: none; grid-template-columns: repeat(var(--n), minmax(96px, 1fr)); padding-bottom: 2px; margin: 0 -14px; padding-inline: 14px; }
+  .rail-track { right: auto; width: calc(100% - 100% / var(--n)); }
+  .side, .side-peek { grid-template-columns: minmax(0, 1fr); }
+  .props dt { padding-right: 10px; }
+
+  /* report */
+  .page-report .page-head { flex-direction: column; align-items: stretch; }
+  .stepper { justify-content: space-between; }
+  .stepper button { padding: 0 8px 0 4px; font-size: 12px; gap: 5px; }
+  .stepper li:not([data-on]) button { font-size: 0; gap: 0; padding: 0 4px; }
+  .report-main { padding: 16px; min-height: 0; }
+  .step-title { font-size: 23px; }
+  .step-nav { position: sticky; bottom: calc(var(--tab-h) + 18px + env(safe-area-inset-bottom)); margin: 0 -16px -16px; padding: 12px 16px;
+    background: linear-gradient(var(--glass-solid), var(--glass-solid)), var(--base); border-radius: 0 0 var(--radius) var(--radius); }
+  .step-nav .btn { height: 46px; flex: 1; } .step-nav > span { display: none; }
+  .tiles, .tiles-3 { grid-template-columns: minmax(0, 1fr); }
+  .grid-2, .grid-3 { grid-template-columns: minmax(0, 1fr); }
+  .review { grid-template-columns: 90px minmax(0, 1fr); }
+  .report-side .card { display: none; }
+
+  /* home */
+  .home-head .btn.big { width: 100%; }
+  .quick { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .quick-item { padding: 12px 14px; } .quick-item small { display: none; }
+  .cards { grid-template-columns: minmax(0, 1fr); }
+
+  /* settings & admin */
+  .set-row { grid-template-columns: auto minmax(0, 1fr); } .set-row > :last-child { grid-column: 1 / -1; justify-self: start; }
+  .profile { grid-template-columns: minmax(0, 1fr); }
+  .tf-setup { grid-template-columns: minmax(0, 1fr); } .tf-setup .qr { max-width: 200px; justify-self: center; }
+  .filters-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .assets { grid-template-columns: minmax(0, 1fr); }
+  .base-field { margin-left: 0; width: 100%; } .base-field .input { flex: 1; width: auto; }
+  .itable { font-size: 13px; }
+  .keys li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .flow { grid-template-columns: minmax(0, 1fr); }
+
+  /* map page */
+  .map-page .mlmap-tools { top: 14px; }
+  .map-list { bottom: calc(var(--tab-h) + 20px + env(safe-area-inset-bottom)); height: 30vh; }
+
+  /* overlays */
+  .ov-root { padding: 0; }
+  .cp-root { place-items: start stretch; padding: max(10px, env(safe-area-inset-top)) 10px 0; }
+  .cp { max-height: 80dvh; }
+  .cp-foot { display: none; }
+  .ov-sheet .ov-body { padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+}

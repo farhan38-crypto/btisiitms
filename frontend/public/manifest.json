@@ -1,0 +1,12 @@
+{
+  "name": "BITS reports — Campus IT Support",
+  "short_name": "BITS reports",
+  "start_url": "/incidents",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F7F3ED",
+  "theme_color": "#76513B",
+  "icons": [
+    { "src": "/assets/bits-crest.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

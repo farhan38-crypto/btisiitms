@@ -1,0 +1,892 @@
+{
+  "name": "bits-reports",
+  "description": "BITS reports is a full-stack campus IT support application (CS F213/MAC F212) with role-based incident report workflows, Google Workspace sign-in, and optional server-side AI assistance. It pairs a React frontend with a FastAPI + MongoDB backend that handles classification, duplicate detection, technician recommendation, and SLA evaluation.",
+  "languages": [
+    "batch",
+    "config",
+    "css",
+    "dockerfile",
+    "html",
+    "javascript",
+    "json",
+    "markdown",
+    "powershell",
+    "python",
+    "shell",
+    "txt",
+    "yaml"
+  ],
+  "frameworks": [
+    "React",
+    "FastAPI",
+    "Pydantic",
+    "Uvicorn",
+    "pytest",
+    "Docker",
+    "Docker Compose"
+  ],
+  "files": [
+    {
+      "path": "README.md",
+      "language": "markdown",
+      "sizeLines": 245,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "backend/.dockerignore",
+      "language": "unknown",
+      "sizeLines": 7,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "backend/.env.example",
+      "language": "config",
+      "sizeLines": 25,
+      "fileCategory": "config"
+    },
+    {
+      "path": "backend/Dockerfile",
+      "language": "dockerfile",
+      "sizeLines": 6,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "backend/app/__init__.py",
+      "language": "python",
+      "sizeLines": 0,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/core/__init__.py",
+      "language": "python",
+      "sizeLines": 0,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/core/container.py",
+      "language": "python",
+      "sizeLines": 56,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/core/db.py",
+      "language": "python",
+      "sizeLines": 54,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/core/error_handling.py",
+      "language": "python",
+      "sizeLines": 222,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/core/logging_config.py",
+      "language": "python",
+      "sizeLines": 329,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/core/security.py",
+      "language": "python",
+      "sizeLines": 104,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/domain/__init__.py",
+      "language": "python",
+      "sizeLines": 0,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/domain/campus.py",
+      "language": "python",
+      "sizeLines": 65,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/domain/enums.py",
+      "language": "python",
+      "sizeLines": 9,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/domain/events.py",
+      "language": "python",
+      "sizeLines": 77,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/domain/exceptions.py",
+      "language": "python",
+      "sizeLines": 97,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/domain/models.py",
+      "language": "python",
+      "sizeLines": 512,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/domain/scope.py",
+      "language": "python",
+      "sizeLines": 276,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/domain/sla.py",
+      "language": "python",
+      "sizeLines": 61,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/domain/state.py",
+      "language": "python",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/domain/strategies.py",
+      "language": "python",
+      "sizeLines": 224,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/models/__init__.py",
+      "language": "python",
+      "sizeLines": 0,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/models/schemas.py",
+      "language": "python",
+      "sizeLines": 195,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/repositories.py",
+      "language": "python",
+      "sizeLines": 235,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/routers/__init__.py",
+      "language": "python",
+      "sizeLines": 0,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/routers/account.py",
+      "language": "python",
+      "sizeLines": 220,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/routers/admin.py",
+      "language": "python",
+      "sizeLines": 251,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/routers/auth.py",
+      "language": "python",
+      "sizeLines": 256,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/routers/catalog.py",
+      "language": "python",
+      "sizeLines": 25,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/routers/client_errors.py",
+      "language": "python",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/routers/docs.py",
+      "language": "python",
+      "sizeLines": 18,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/routers/incidents.py",
+      "language": "python",
+      "sizeLines": 73,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/routers/intelligence.py",
+      "language": "python",
+      "sizeLines": 55,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/routers/notifications.py",
+      "language": "python",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/routers/reports.py",
+      "language": "python",
+      "sizeLines": 81,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/services/__init__.py",
+      "language": "python",
+      "sizeLines": 0,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/services/audit.py",
+      "language": "python",
+      "sizeLines": 4,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/services/email.py",
+      "language": "python",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/services/incident_service.py",
+      "language": "python",
+      "sizeLines": 382,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/services/intelligence.py",
+      "language": "python",
+      "sizeLines": 665,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/services/notifications.py",
+      "language": "python",
+      "sizeLines": 153,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/services/observers.py",
+      "language": "python",
+      "sizeLines": 108,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/services/seed.py",
+      "language": "python",
+      "sizeLines": 93,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/services/sla_monitor.py",
+      "language": "python",
+      "sizeLines": 113,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/app/services/two_factor.py",
+      "language": "python",
+      "sizeLines": 175,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/requirements.txt",
+      "language": "txt",
+      "sizeLines": 15,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "backend/server.py",
+      "language": "python",
+      "sizeLines": 95,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/tests/conftest.py",
+      "language": "python",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/tests/test_account_security.py",
+      "language": "python",
+      "sizeLines": 271,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/tests/test_api_flow.py",
+      "language": "python",
+      "sizeLines": 264,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/tests/test_autofill.py",
+      "language": "python",
+      "sizeLines": 92,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/tests/test_bug_fixes.py",
+      "language": "python",
+      "sizeLines": 193,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/tests/test_domain.py",
+      "language": "python",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/tests/test_duplicates_and_sla_defaults.py",
+      "language": "python",
+      "sizeLines": 123,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/tests/test_error_logging.py",
+      "language": "python",
+      "sizeLines": 91,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/tests/test_features.py",
+      "language": "python",
+      "sizeLines": 407,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/tests/test_form_autofill.py",
+      "language": "python",
+      "sizeLines": 150,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/tests/test_gemini.py",
+      "language": "python",
+      "sizeLines": 346,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/tests/test_scope_api.py",
+      "language": "python",
+      "sizeLines": 169,
+      "fileCategory": "code"
+    },
+    {
+      "path": "backend/tests/test_scope_rules.py",
+      "language": "python",
+      "sizeLines": 164,
+      "fileCategory": "code"
+    },
+    {
+      "path": "docker-compose.yml",
+      "language": "yaml",
+      "sizeLines": 54,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "frontend/.dockerignore",
+      "language": "unknown",
+      "sizeLines": 4,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "frontend/.env.example",
+      "language": "config",
+      "sizeLines": 2,
+      "fileCategory": "config"
+    },
+    {
+      "path": "frontend/Dockerfile",
+      "language": "dockerfile",
+      "sizeLines": 6,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "frontend/package.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "frontend/public/index.html",
+      "language": "html",
+      "sizeLines": 16,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/App.js",
+      "language": "javascript",
+      "sizeLines": 1977,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/api.js",
+      "language": "javascript",
+      "sizeLines": 88,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/EditUserModal.js",
+      "language": "javascript",
+      "sizeLines": 63,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/IncidentFilters.js",
+      "language": "javascript",
+      "sizeLines": 108,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/NonItNotice.js",
+      "language": "javascript",
+      "sizeLines": 71,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/campus.js",
+      "language": "javascript",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/common.js",
+      "language": "javascript",
+      "sizeLines": 61,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/components/issueTypes.js",
+      "language": "javascript",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/errorReporting.js",
+      "language": "javascript",
+      "sizeLines": 122,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/googleSignIn.js",
+      "language": "javascript",
+      "sizeLines": 91,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/index.css",
+      "language": "css",
+      "sizeLines": 1754,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "frontend/src/index.js",
+      "language": "javascript",
+      "sizeLines": 13,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/pages/Account.js",
+      "language": "javascript",
+      "sizeLines": 449,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/pages/AdminConfig.js",
+      "language": "javascript",
+      "sizeLines": 360,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/pages/AuditLog.js",
+      "language": "javascript",
+      "sizeLines": 112,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/pages/Dashboard.js",
+      "language": "javascript",
+      "sizeLines": 151,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/pages/IncidentDetail.js",
+      "language": "javascript",
+      "sizeLines": 438,
+      "fileCategory": "code"
+    },
+    {
+      "path": "frontend/src/setupProxy.js",
+      "language": "javascript",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "start.bat",
+      "language": "batch",
+      "sizeLines": 4,
+      "fileCategory": "script"
+    },
+    {
+      "path": "start.ps1",
+      "language": "powershell",
+      "sizeLines": 181,
+      "fileCategory": "script"
+    },
+    {
+      "path": "start.sh",
+      "language": "shell",
+      "sizeLines": 165,
+      "fileCategory": "script"
+    }
+  ],
+  "totalFiles": 87,
+  "filteredByIgnore": 0,
+  "estimatedComplexity": "moderate",
+  "importMap": {
+    "README.md": [],
+    "backend/.dockerignore": [],
+    "backend/.env.example": [],
+    "backend/Dockerfile": [],
+    "backend/app/__init__.py": [],
+    "backend/app/core/__init__.py": [],
+    "backend/app/core/container.py": [
+      "backend/app/core/db.py",
+      "backend/app/domain/events.py",
+      "backend/app/repositories.py",
+      "backend/app/services/incident_service.py",
+      "backend/app/services/intelligence.py",
+      "backend/app/services/notifications.py",
+      "backend/app/services/observers.py",
+      "backend/app/services/sla_monitor.py",
+      "backend/app/services/two_factor.py"
+    ],
+    "backend/app/core/db.py": [],
+    "backend/app/core/error_handling.py": [
+      "backend/app/core/logging_config.py",
+      "backend/app/domain/exceptions.py"
+    ],
+    "backend/app/core/logging_config.py": [],
+    "backend/app/core/security.py": [
+      "backend/app/core/db.py",
+      "backend/app/domain/exceptions.py"
+    ],
+    "backend/app/domain/__init__.py": [],
+    "backend/app/domain/campus.py": [],
+    "backend/app/domain/enums.py": [],
+    "backend/app/domain/events.py": [
+      "backend/app/domain/sla.py"
+    ],
+    "backend/app/domain/exceptions.py": [],
+    "backend/app/domain/models.py": [
+      "backend/app/domain/enums.py",
+      "backend/app/domain/exceptions.py",
+      "backend/app/domain/sla.py",
+      "backend/app/domain/state.py"
+    ],
+    "backend/app/domain/scope.py": [],
+    "backend/app/domain/sla.py": [
+      "backend/app/domain/enums.py"
+    ],
+    "backend/app/domain/state.py": [
+      "backend/app/domain/enums.py",
+      "backend/app/domain/exceptions.py"
+    ],
+    "backend/app/domain/strategies.py": [
+      "backend/app/domain/enums.py",
+      "backend/app/domain/exceptions.py"
+    ],
+    "backend/app/models/__init__.py": [],
+    "backend/app/models/schemas.py": [],
+    "backend/app/repositories.py": [
+      "backend/app/domain/enums.py",
+      "backend/app/domain/exceptions.py"
+    ],
+    "backend/app/routers/__init__.py": [],
+    "backend/app/routers/account.py": [
+      "backend/app/core/container.py",
+      "backend/app/core/db.py",
+      "backend/app/core/security.py",
+      "backend/app/domain/enums.py",
+      "backend/app/domain/exceptions.py",
+      "backend/app/models/schemas.py",
+      "backend/app/routers/auth.py",
+      "backend/app/services/__init__.py",
+      "backend/app/services/notifications.py"
+    ],
+    "backend/app/routers/admin.py": [
+      "backend/app/core/container.py",
+      "backend/app/core/security.py",
+      "backend/app/domain/enums.py",
+      "backend/app/domain/exceptions.py",
+      "backend/app/domain/models.py",
+      "backend/app/domain/strategies.py",
+      "backend/app/models/schemas.py"
+    ],
+    "backend/app/routers/auth.py": [
+      "backend/app/core/container.py",
+      "backend/app/core/db.py",
+      "backend/app/core/logging_config.py",
+      "backend/app/core/security.py",
+      "backend/app/domain/enums.py",
+      "backend/app/domain/exceptions.py",
+      "backend/app/domain/models.py",
+      "backend/app/models/schemas.py",
+      "backend/app/services/email.py",
+      "backend/app/services/notifications.py"
+    ],
+    "backend/app/routers/catalog.py": [
+      "backend/app/core/container.py",
+      "backend/app/core/security.py",
+      "backend/app/domain/enums.py",
+      "backend/app/models/schemas.py"
+    ],
+    "backend/app/routers/client_errors.py": [
+      "backend/app/core/error_handling.py"
+    ],
+    "backend/app/routers/docs.py": [
+      "backend/app/core/security.py"
+    ],
+    "backend/app/routers/incidents.py": [
+      "backend/app/core/container.py",
+      "backend/app/core/security.py",
+      "backend/app/domain/enums.py",
+      "backend/app/models/schemas.py"
+    ],
+    "backend/app/routers/intelligence.py": [
+      "backend/app/core/container.py",
+      "backend/app/core/security.py",
+      "backend/app/domain/enums.py",
+      "backend/app/models/schemas.py"
+    ],
+    "backend/app/routers/notifications.py": [
+      "backend/app/core/db.py",
+      "backend/app/core/security.py",
+      "backend/app/domain/exceptions.py",
+      "backend/app/models/schemas.py"
+    ],
+    "backend/app/routers/reports.py": [
+      "backend/app/core/container.py",
+      "backend/app/core/security.py",
+      "backend/app/domain/enums.py",
+      "backend/app/domain/sla.py",
+      "backend/app/models/schemas.py"
+    ],
+    "backend/app/services/__init__.py": [],
+    "backend/app/services/audit.py": [
+      "backend/app/repositories.py"
+    ],
+    "backend/app/services/email.py": [],
+    "backend/app/services/incident_service.py": [
+      "backend/app/domain/enums.py",
+      "backend/app/domain/events.py",
+      "backend/app/domain/exceptions.py",
+      "backend/app/domain/models.py",
+      "backend/app/domain/sla.py",
+      "backend/app/domain/strategies.py",
+      "backend/app/models/schemas.py"
+    ],
+    "backend/app/services/intelligence.py": [
+      "backend/app/core/logging_config.py",
+      "backend/app/domain/enums.py",
+      "backend/app/domain/scope.py",
+      "backend/app/domain/sla.py",
+      "backend/app/domain/strategies.py"
+    ],
+    "backend/app/services/notifications.py": [
+      "backend/app/domain/sla.py",
+      "backend/app/services/email.py"
+    ],
+    "backend/app/services/observers.py": [
+      "backend/app/domain/events.py",
+      "backend/app/domain/sla.py",
+      "backend/app/services/notifications.py"
+    ],
+    "backend/app/services/seed.py": [
+      "backend/app/core/security.py",
+      "backend/app/domain/enums.py"
+    ],
+    "backend/app/services/sla_monitor.py": [
+      "backend/app/domain/enums.py",
+      "backend/app/domain/events.py",
+      "backend/app/domain/exceptions.py",
+      "backend/app/domain/models.py",
+      "backend/app/domain/sla.py"
+    ],
+    "backend/app/services/two_factor.py": [
+      "backend/app/domain/exceptions.py"
+    ],
+    "backend/requirements.txt": [],
+    "backend/server.py": [
+      "backend/app/core/db.py",
+      "backend/app/core/error_handling.py",
+      "backend/app/core/logging_config.py",
+      "backend/app/routers/__init__.py",
+      "backend/app/routers/account.py",
+      "backend/app/routers/admin.py",
+      "backend/app/routers/auth.py",
+      "backend/app/routers/catalog.py",
+      "backend/app/routers/client_errors.py",
+      "backend/app/routers/docs.py",
+      "backend/app/routers/incidents.py",
+      "backend/app/routers/intelligence.py",
+      "backend/app/routers/notifications.py",
+      "backend/app/routers/reports.py"
+    ],
+    "backend/tests/conftest.py": [],
+    "backend/tests/test_account_security.py": [
+      "backend/app/core/container.py",
+      "backend/app/core/db.py",
+      "backend/app/services/__init__.py",
+      "backend/app/services/notifications.py",
+      "backend/server.py"
+    ],
+    "backend/tests/test_api_flow.py": [
+      "backend/app/core/db.py",
+      "backend/server.py"
+    ],
+    "backend/tests/test_autofill.py": [
+      "backend/app/core/db.py",
+      "backend/app/services/intelligence.py",
+      "backend/server.py"
+    ],
+    "backend/tests/test_bug_fixes.py": [
+      "backend/app/core/db.py",
+      "backend/app/services/intelligence.py",
+      "backend/server.py"
+    ],
+    "backend/tests/test_domain.py": [
+      "backend/app/domain/enums.py",
+      "backend/app/domain/exceptions.py",
+      "backend/app/domain/state.py",
+      "backend/app/domain/strategies.py"
+    ],
+    "backend/tests/test_duplicates_and_sla_defaults.py": [
+      "backend/app/core/db.py",
+      "backend/app/domain/sla.py",
+      "backend/app/services/intelligence.py",
+      "backend/app/services/seed.py",
+      "backend/server.py"
+    ],
+    "backend/tests/test_error_logging.py": [
+      "backend/app/core/db.py",
+      "backend/app/core/logging_config.py",
+      "backend/server.py"
+    ],
+    "backend/tests/test_features.py": [
+      "backend/app/core/container.py",
+      "backend/app/core/db.py",
+      "backend/app/domain/enums.py",
+      "backend/app/domain/exceptions.py",
+      "backend/app/domain/models.py",
+      "backend/app/domain/sla.py",
+      "backend/app/domain/strategies.py",
+      "backend/server.py"
+    ],
+    "backend/tests/test_form_autofill.py": [
+      "backend/app/core/container.py",
+      "backend/app/core/db.py",
+      "backend/app/domain/campus.py",
+      "backend/app/domain/models.py",
+      "backend/app/services/intelligence.py",
+      "backend/server.py"
+    ],
+    "backend/tests/test_gemini.py": [
+      "backend/app/core/container.py",
+      "backend/app/core/db.py",
+      "backend/app/services/intelligence.py",
+      "backend/server.py"
+    ],
+    "backend/tests/test_scope_api.py": [
+      "backend/app/core/container.py",
+      "backend/app/core/db.py",
+      "backend/app/services/intelligence.py",
+      "backend/server.py"
+    ],
+    "backend/tests/test_scope_rules.py": [
+      "backend/app/domain/scope.py"
+    ],
+    "docker-compose.yml": [],
+    "frontend/.dockerignore": [],
+    "frontend/.env.example": [],
+    "frontend/Dockerfile": [],
+    "frontend/package.json": [],
+    "frontend/public/index.html": [],
+    "frontend/src/App.js": [
+      "frontend/src/api.js",
+      "frontend/src/components/EditUserModal.js",
+      "frontend/src/components/IncidentFilters.js",
+      "frontend/src/components/NonItNotice.js",
+      "frontend/src/components/campus.js",
+      "frontend/src/components/common.js",
+      "frontend/src/components/issueTypes.js",
+      "frontend/src/errorReporting.js",
+      "frontend/src/googleSignIn.js",
+      "frontend/src/pages/Account.js",
+      "frontend/src/pages/AdminConfig.js",
+      "frontend/src/pages/AuditLog.js",
+      "frontend/src/pages/Dashboard.js",
+      "frontend/src/pages/IncidentDetail.js"
+    ],
+    "frontend/src/api.js": [],
+    "frontend/src/components/EditUserModal.js": [
+      "frontend/src/api.js",
+      "frontend/src/components/campus.js",
+      "frontend/src/components/common.js"
+    ],
+    "frontend/src/components/IncidentFilters.js": [
+      "frontend/src/api.js",
+      "frontend/src/components/common.js"
+    ],
+    "frontend/src/components/NonItNotice.js": [
+      "frontend/src/components/common.js"
+    ],
+    "frontend/src/components/campus.js": [],
+    "frontend/src/components/common.js": [],
+    "frontend/src/components/issueTypes.js": [],
+    "frontend/src/errorReporting.js": [
+      "frontend/src/api.js"
+    ],
+    "frontend/src/googleSignIn.js": [],
+    "frontend/src/index.css": [],
+    "frontend/src/index.js": [
+      "frontend/src/App.js",
+      "frontend/src/errorReporting.js",
+      "frontend/src/index.css"
+    ],
+    "frontend/src/pages/Account.js": [
+      "frontend/src/api.js",
+      "frontend/src/components/common.js"
+    ],
+    "frontend/src/pages/AdminConfig.js": [
+      "frontend/src/api.js",
+      "frontend/src/components/common.js"
+    ],
+    "frontend/src/pages/AuditLog.js": [
+      "frontend/src/api.js",
+      "frontend/src/components/common.js"
+    ],
+    "frontend/src/pages/Dashboard.js": [
+      "frontend/src/api.js",
+      "frontend/src/components/common.js"
+    ],
+    "frontend/src/pages/IncidentDetail.js": [
+      "frontend/src/api.js",
+      "frontend/src/components/campus.js",
+      "frontend/src/components/common.js"
+    ],
+    "frontend/src/setupProxy.js": [],
+    "start.bat": [],
+    "start.ps1": [],
+    "start.sh": []
+  }
+}

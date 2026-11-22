@@ -1,0 +1,37 @@
+/* ── sign in ── */
+.login { position: relative; z-index: 1; min-height: 100dvh; display: grid; grid-template-columns: 1.15fr minmax(320px, 420px);
+  align-items: center; gap: 48px; padding: 48px clamp(20px, 6vw, 96px); max-width: 1320px; margin: 0 auto; }
+.login-object { position: fixed; inset: 0; z-index: 0; opacity: 0; transition: opacity 1.2s var(--ease-out); }
+.login-object[data-on] { opacity: .95; }
+.login-copy, .login-card { position: relative; z-index: 1; }
+.login-crest { border-radius: 50%; box-shadow: 0 0 40px -6px var(--a); margin-bottom: 26px; }
+.login-title { font-size: clamp(52px, 8.4vw, 118px); font-weight: 700; letter-spacing: -0.045em; line-height: .95; }
+.login-title span { display: inline-block; background: linear-gradient(100deg, var(--ink) 30%, color-mix(in srgb, var(--a) 70%, var(--ink)) 70%, var(--b));
+  -webkit-background-clip: text; background-clip: text; color: transparent; padding-bottom: .08em; }
+.login-sub { max-width: 46ch; color: var(--ink-2); font-size: 17px; margin: 22px 0 0; }
+.login-card { padding: 26px; display: grid; gap: 14px; border-radius: calc(var(--radius, 24px) + 6px); overflow: hidden;
+  /* blurring a constantly animating 3D scene every frame was the main cause of the stutter: lighter blur, denser glass */
+  -webkit-backdrop-filter: blur(12px) saturate(1.4); backdrop-filter: blur(12px) saturate(1.4); background: color-mix(in srgb, var(--glass-solid) 70%, transparent); }
+.login-card form { display: grid; gap: 12px; }
+.login-tabs { width: 100%; margin-bottom: 4px; }
+.login-tabs button { flex: 1; }
+.google-btn { width: 100%; height: 46px; margin-top: 10px; background: var(--glass-hi); }
+.or { display: flex; align-items: center; gap: 12px; margin: 12px 0 4px; color: var(--ink-3); font-size: 12.5px; }
+.or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--rim); }
+.link-row { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; background: none; color: var(--ink-2); font-size: 13.5px; padding: 4px; }
+.link-row:hover { color: var(--ink); text-decoration: underline; }
+.login-note { margin: 0; color: var(--ink-2); font-size: 13.5px; }
+.login-hint { margin: -4px 0 0; display: flex; gap: 6px; align-items: center; color: var(--ink-2); font-size: 12.5px; }
+.login-h { display: flex; gap: 8px; align-items: center; font-size: 22px; }
+.code-input { letter-spacing: .35em; font-variant-numeric: tabular-nums; font-size: 20px; text-align: center; }
+.login-card h2 { font-size: 26px; margin-bottom: 4px; }
+.field { display: grid; gap: 6px; }
+.form-error { margin: 0; color: #FF8BA0; font-size: 13.5px; }
+.login-go { height: 48px; margin-top: 4px; }
+.demo { display: grid; gap: 8px; margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--rim); }
+.demo div { display: flex; gap: 6px; flex-wrap: wrap; }
+.demo .btn { height: 34px; font-size: 13px; }
+@media (max-width: 860px) {
+  .login { grid-template-columns: 1fr; gap: 28px; padding-top: 40px; }
+  .login-object { opacity: .55; }
+}

@@ -1,0 +1,118 @@
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/geist";
+
+/* Design tokens. Colours come from the active theme (lib/themes.ts sets --base, --a, --b, --c, --edge). */
+@property --edge-c { syntax: '<color>'; inherits: true; initial-value: #8B7CFF; }
+@property --lx { syntax: '<percentage>'; inherits: true; initial-value: 40%; }
+
+:root {
+  --base: #000; --a: #8B7CFF; --b: #3EE6D0; --c: #FF6FB5; --edge: #8B7CFF;
+  --ink: #F4F4F6; --ink-2: rgb(244 244 246 / .64); --ink-3: rgb(244 244 246 / .42);
+  --glass: rgb(255 255 255 / .055); --glass-hi: rgb(255 255 255 / .09); --glass-solid: rgb(14 14 18 / .86);
+  --rim: rgb(255 255 255 / .14); --rim-top: rgb(255 255 255 / .26); --rim-bottom: rgb(255 255 255 / .05);
+  --shadow: 0 30px 60px -30px rgb(0 0 0 / .8);
+  --font-ui: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque Variable', 'Geist Variable', sans-serif;
+  --spring: cubic-bezier(.34, 1.4, .64, 1);
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  color-scheme: dark;
+}
+:root[data-scheme="light"] {
+  --ink: #15141A; --ink-2: rgb(21 20 26 / .64); --ink-3: rgb(21 20 26 / .45);
+  --glass: rgb(255 255 255 / .55); --glass-hi: rgb(255 255 255 / .75); --glass-solid: rgb(255 255 255 / .92);
+  --rim: rgb(20 20 40 / .1); --rim-top: rgb(255 255 255 / .9); --rim-bottom: rgb(20 20 40 / .12);
+  --shadow: 0 30px 60px -32px rgb(40 30 90 / .35);
+  color-scheme: light;
+}
+
+html, body, #root { min-height: 100%; }
+body { margin: 0; background: var(--base); color: var(--ink); font-family: var(--font-ui);
+  font-size: calc(15px * var(--text-scale, 1)); line-height: 1.5; font-weight: calc(400 + var(--weight-boost, 0)); -webkit-font-smoothing: antialiased; transition: background-color .6s ease; }
+h1, h2, h3, .display { font-family: var(--font-display); letter-spacing: -0.02em; line-height: 1.08; margin: 0; }
+button { font: inherit; color: inherit; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+::selection { background: color-mix(in srgb, var(--a) 40%, transparent); }
+:focus-visible { outline: 2px solid var(--a); outline-offset: 3px; border-radius: 10px; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ── Glass: a translucent shade, frosted, with a rim lit from above ── */
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(var(--blur, 22px)) saturate(1.6); backdrop-filter: blur(var(--blur, 22px)) saturate(1.6);
+  border: var(--rim-w, 1px) solid var(--rim); border-top-color: var(--rim-top); border-bottom-color: var(--rim-bottom);
+  box-shadow: var(--shadow), inset 0 1px 0 rgb(255 255 255 / .06);
+  border-radius: var(--radius, 24px);
+}
+/* Solid themes and the "Solid panels" option: no see-through, no blur (cheaper and sharper). */
+:root[data-solid="true"] .glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
+:root[data-solid="true"][data-family="glass"] .glass { background: var(--glass-solid); }
+:root[data-solid="true"] .btn { -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* Themes without glow (screen-tuned, high visibility, comfort): no neon halos. */
+:root[data-glow="false"] .metric-glow, :root[data-glow="false"] .metric::after { box-shadow: none; }
+:root[data-glow="false"] .metric-glow { opacity: 0 !important; }
+:root[data-glow="false"] .chip .dot, :root[data-glow="false"] .legend-item i, :root[data-glow="false"] .map-list i { box-shadow: none; }
+:root[data-glow="false"] .pin-core { box-shadow: 0 0 0 2px var(--base), 0 0 0 3px color-mix(in srgb, var(--k) 60%, transparent); background: var(--k); }
+:root[data-glow="false"] .hero .urgent { text-shadow: none; }
+:root[data-glow="false"] .btn-primary { box-shadow: none; }
+:root[data-glow="false"] .login-crest { box-shadow: none; }
+.glass-solid { background: var(--glass-solid); }
+.glass-hover { transition: background-color .3s var(--ease-out), border-color .3s, transform .45s var(--spring), box-shadow .4s; }
+.glass-hover:hover { background: var(--glass-hi); }
+
+/* ── Light: one source at the top + a rim light on the panel you point at (see Backdrop.tsx) ── */
+:root { --edge-c: var(--edge); transition: --edge-c .9s var(--ease-out); }
+.toplight { position: fixed; inset: 0 0 auto; height: 75vh; pointer-events: none; z-index: 0; transition: --lx 1.6s var(--ease-out);
+  /* key: pushed above the edge so only its lower falloff shows */
+  background: radial-gradient(42% 58% at clamp(25%, var(--lx), 75%) -14%, color-mix(in srgb, var(--edge-c) 30%, transparent), transparent 72%),
+              radial-gradient(70% 40% at 50% -10%, color-mix(in srgb, var(--edge-c) 10%, transparent), transparent 70%); }
+/* rim: a hairline where the light enters, brightest under the key */
+.toplight i { position: absolute; inset: 0 0 auto; height: 1px;
+  background: radial-gradient(30% 100% at clamp(25%, var(--lx), 75%) 0, color-mix(in srgb, var(--edge-c) 85%, #fff), transparent);
+  opacity: .55; }
+:root[data-scheme="light"] .toplight { background: radial-gradient(42% 58% at clamp(25%, var(--lx), 75%) -14%, color-mix(in srgb, var(--edge-c) 22%, transparent), transparent 72%); }
+:root[data-scheme="light"] .toplight i { opacity: .35; }
+@media (prefers-reduced-motion: reduce) { :root { transition: --edge-c .3s; } }
+
+/* rim light on glass: a 1px border mask lit by a soft circle at the pointer */
+.glass { position: relative; }
+.glass::before { content: ''; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none; z-index: 3;
+  background: radial-gradient(220px circle at var(--mx, -999px) var(--my, -999px), color-mix(in srgb, var(--edge-c) 90%, #fff), transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: 0; transition: opacity .4s var(--ease-out); }
+.glass[data-lit]::before { opacity: .8; }
+:root[data-scheme="light"] .glass[data-lit]::before { opacity: .6; }
+
+/* ── buttons & chips ── */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px;
+  border-radius: 999px; border: 1px solid var(--rim); background: var(--glass); color: var(--ink); font-weight: 550;
+  font-size: 14px; white-space: nowrap; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  transition: transform .35s var(--spring), background-color .2s, border-color .2s; }
+.btn:hover { background: var(--glass-hi); border-color: color-mix(in srgb, var(--a) 40%, var(--rim)); }
+.btn:active { transform: scale(.96); }
+.btn-primary { border: 0; color: var(--on-accent, #0A0A0C); background: linear-gradient(120deg, var(--a), var(--b));
+  box-shadow: 0 10px 30px -12px color-mix(in srgb, var(--a) 80%, transparent); }
+.btn-primary:hover { background: linear-gradient(120deg, var(--a), var(--b)); filter: brightness(1.08); }
+/* Solid themes: one flat accent, readable text on it. */
+:root:not([data-family="glass"]) .btn-primary { background: var(--a); }
+:root:not([data-family="glass"]) .btn-primary:hover { background: color-mix(in srgb, var(--a) 86%, var(--ink)); filter: none; }
+.btn:disabled { opacity: .55; cursor: default; transform: none; }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; background: color-mix(in srgb, var(--k, var(--a)) 16%, transparent);
+  color: color-mix(in srgb, var(--k, var(--a)) 85%, var(--ink)); white-space: nowrap; }
+.chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--k, var(--a)); box-shadow: 0 0 10px var(--k, var(--a)); }
+.label { font-size: 12.5px; color: var(--ink-3); font-weight: 500; }
+.input { width: 100%; height: 46px; padding: 0 16px; border-radius: 14px; border: 1px solid var(--rim);
+  background: color-mix(in srgb, var(--base) 55%, transparent); color: var(--ink); font: inherit; outline: none;
+  transition: border-color .2s, box-shadow .2s; }
+.input:focus { border-color: var(--a); box-shadow: 0 0 0 4px color-mix(in srgb, var(--a) 22%, transparent); }
+
+/* priority glow, used on rows and pins */
+.p-glow { box-shadow: 0 0 0 1px color-mix(in srgb, var(--k) 40%, transparent), 0 0 24px -4px var(--k); }
+
+@keyframes pulse-ring { 0% { transform: scale(.6); opacity: .9 } 100% { transform: scale(2.6); opacity: 0 } }
+@keyframes spin-slow { to { transform: rotate(360deg) } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition-duration: .001s !important; }
+}

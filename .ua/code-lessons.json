@@ -1,0 +1,2835 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-13T07:36:19.607036+00:00",
+  "files": {
+    "README.md": {
+      "overview": "The project README and the starting point of the guided tour (Step 1). It introduces BITS reports as a full-stack campus IT reporting app for CS F213, explains manual, scripted and Docker setup, lists seeded demo accounts, and documents Google sign-in, AI configuration, logging, two-step sign-in, SLA targets and non-IT emergency detection. Its feature table and OOP design map tell you which backend file implements each requirement, so it doubles as an index for the later tour steps.",
+      "sections": [
+        {
+          "title": "Title and technology stack",
+          "lineRange": [
+            1,
+            11
+          ],
+          "explanation": "States the app's purpose and lists the stack: a React frontend, a FastAPI + Pydantic + Motor backend, MongoDB, and JWT + bcrypt authentication. The last bullets name the design ideas (Strategy and State patterns, service-layer composition, custom exceptions) and the 'intelligent' features, which the tour covers in Steps 6-11.",
+          "tourOrder": 1
+        },
+        {
+          "title": "Manual local setup",
+          "lineRange": [
+            13,
+            34
+          ],
+          "explanation": "The three-part manual setup: run MongoDB on localhost:27017 (or point `backend/.env` elsewhere), create a virtualenv and start the API with `uvicorn server:app --reload --port 8000`, then `npm start` the frontend on port 3000. The `server:app` target refers to the `app` object in `backend/server.py`, the entry point explained in Step 2.",
+          "tourOrder": 1
+        },
+        {
+          "title": "One-command quick start",
+          "lineRange": [
+            36,
+            56
+          ],
+          "explanation": "Describes the `start.sh` / `start.bat` scripts that create settings files, the Python environment and packages, start MongoDB and launch both servers, plus optional ngrok and Docker Compose routes. Note the closing line: Gemini and SMTP keys are optional, and the app falls back to built-in behaviour without them. The scripts themselves are covered in the final tour step.",
+          "tourOrder": 1
+        },
+        {
+          "title": "Seeded demo accounts",
+          "lineRange": [
+            58,
+            63
+          ],
+          "explanation": "Lists the admin, customer and technician credentials created at startup by `app/services/seed.py`. The warning to change the admin password and JWT secret matters because both defaults are public in this file.",
+          "tourOrder": 1
+        },
+        {
+          "title": "Google sign-in and AI settings",
+          "lineRange": [
+            65,
+            76
+          ],
+          "explanation": "Documents the `.env` variables for Google OAuth, the allowed Workspace email domain, secure cookies and the optional Gemini model. It also explains why phones need an HTTPS tunnel for Google sign-in, and states the security rule implemented in `routers/auth.py`: the backend verifies every ID token and Google sign-in never elevates an existing user's role.",
+          "tourOrder": 1
+        },
+        {
+          "title": "Error logs and request ids",
+          "lineRange": [
+            78,
+            104
+          ],
+          "explanation": "Explains the human-readable logging produced by `logging_config.py` and `error_handling.py`: `app.log` versus `errors.log`, the indented 'What happened / Where / Likely cause' block, and the `X-Request-ID` that ties a user's error message to a log line. It also lists the tuning knobs (`LOG_LEVEL`, `LOG_DIR`, `SLOW_REQUEST_MS`, `LOG_FULL_TRACEBACKS`).",
+          "tourOrder": 1
+        },
+        {
+          "title": "AI safety and Mermaid notes",
+          "lineRange": [
+            106,
+            110
+          ],
+          "explanation": "Two short design notes. AI credentials stay on the server and the AI endpoint only suggests editable fields, never creating a report itself. Mermaid diagrams are deliberately absent because of a Node version constraint.",
+          "tourOrder": 1
+        },
+        {
+          "title": "Feature-to-code map",
+          "lineRange": [
+            112,
+            127
+          ],
+          "explanation": "A table mapping each project-brief requirement to the class or file that implements it, such as `WeightedScorePriorityStrategy`, `SlaMonitor`, `NotificationChannel` subclasses and `AuditObserver`. Use it as a lookup table while following the tour.",
+          "tourOrder": 1
+        },
+        {
+          "title": "Account security and two-step sign-in",
+          "lineRange": [
+            129,
+            180
+          ],
+          "explanation": "Covers the account page, TOTP two-step sign-in (a 5-minute sign-in pass, then a code; secrets encrypted at rest, backup codes stored as HMAC hashes), and session versioning that signs out other devices. It then documents the default SLA targets with their 25% at-risk window, the concept-based duplicate detector, and the offline scope rules that turn non-IT emergencies into help-line popups instead of tickets.",
+          "tourOrder": 1
+        },
+        {
+          "title": "OOP design and tests",
+          "lineRange": [
+            182,
+            245
+          ],
+          "explanation": "Gives the folder layout of the backend and explains where each OOP principle and design pattern (Strategy, State, Factory, Observer, Repository, Adapter, Template Method, composition root) appears. It ends with the custom exception list and the pytest instructions; tests need MongoDB and use a separate `itsm_test` database.",
+          "tourOrder": 1
+        }
+      ]
+    },
+    "backend/requirements.txt": {
+      "overview": "The pinned Python dependency list for the FastAPI backend, referenced in Step 1 of the tour as an at-a-glance view of the backend's building blocks. Every package is pinned to an exact version so that local, scripted and Docker installs behave the same.",
+      "sections": [
+        {
+          "title": "Web framework and database",
+          "lineRange": [
+            1,
+            6
+          ],
+          "explanation": "FastAPI and Uvicorn (with the `standard` extras for faster event loop and reload support) serve the API, and Pydantic validates request bodies. Motor is the asyncio MongoDB driver used in `app/core/db.py`, built on the pinned PyMongo version. python-dotenv loads `backend/.env` at the top of `server.py`.",
+          "tourOrder": 1
+        },
+        {
+          "title": "Authentication primitives",
+          "lineRange": [
+            7,
+            8
+          ],
+          "explanation": "PyJWT signs and verifies the HS256 access, refresh and MFA tokens, and bcrypt hashes passwords and reset codes. Both are used directly in `app/core/security.py`.",
+          "tourOrder": 1
+        },
+        {
+          "title": "Testing tools",
+          "lineRange": [
+            9,
+            10
+          ],
+          "explanation": "pytest runs the test suite. httpx is listed here because the tests drive the FastAPI app through an httpx ASGI client; the logging code also recognises httpx timeouts when explaining external-service failures.",
+          "tourOrder": 1
+        },
+        {
+          "title": "Google sign-in, 2FA and crypto",
+          "lineRange": [
+            11,
+            15
+          ],
+          "explanation": "google-auth and requests verify Google ID tokens server-side in `routers/auth.py`. pyotp generates and checks TOTP codes for two-step sign-in, qrcode renders the setup QR code, and cryptography provides the Fernet encryption the README says protects stored TOTP secrets.",
+          "tourOrder": 1
+        }
+      ]
+    },
+    "backend/app/core/db.py": {
+      "overview": "Creates the single shared Motor client and database handle used by every repository, and contains the startup routine that pings MongoDB, creates indexes and seeds data. `init_db` is awaited from the lifespan hook in `server.py`, making this file the database half of the startup sequence in Tour Step 2.",
+      "sections": [
+        {
+          "title": "Module-level client and database",
+          "lineRange": [
+            1,
+            5
+          ],
+          "explanation": "The `AsyncIOMotorClient` and `db` handle are created at import time from `MONGO_URL` and `DB_NAME`. Because these environment variables are read on import, `server.py` must call `load_dotenv` before importing this module. Motor connects lazily, so creating the client does not fail even if MongoDB is down; the first real command does.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Index creation",
+          "lineRange": [
+            7,
+            30
+          ],
+          "explanation": "`ensure_indexes` declares the unique keys (user email, incident number) and the compound indexes that back common queries such as status/priority filters and newest-first audit and notification lists. The `expireAfterSeconds=0` indexes on `expires_at` make MongoDB delete password-reset records at the stored expiry time, and `security_events` expire after 90 days. Unique names for categories and services are attempted inside a try/except so that an older database with duplicate names logs a warning instead of blocking startup.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Startup with retries and seeding",
+          "lineRange": [
+            32,
+            54
+          ],
+          "explanation": "`init_db` pings the server, builds indexes and runs `seed_all`, retrying up to 15 times with a 2-second delay; this lets the API start before MongoDB is ready, which is common under Docker Compose. Intermediate failures are logged as warnings without tracebacks, and only the final failure logs an error with a traceback and re-raises. The seed and logging imports are inside the function, which avoids an import cycle (`seed.py` imports `security.py`, which imports this module).",
+          "tourOrder": 2
+        }
+      ]
+    },
+    "backend/app/core/error_handling.py": {
+      "overview": "Request logging middleware and the global exception handlers for the API. Every request gets a short request id, one access-log line, and, on failure, a clean JSON body plus a detailed log entry explaining what happened, who triggered it, where in the code it broke and the likely cause. It is registered by `server.py` and is part of the startup and cross-cutting infrastructure described in Tour Step 2; it is also where the domain's `ITSMError` hierarchy becomes HTTP responses.",
+      "sections": [
+        {
+          "title": "Purpose, imports and slow threshold",
+          "lineRange": [
+            1,
+            33
+          ],
+          "explanation": "The module docstring summarises the four guarantees: request ids, one access line per request, explained error logs, and JSON 500s that still carry CORS headers. Two named loggers (`http` and `errors`) separate access lines from error entries. `SLOW_REQUEST_MS` (default 1500) controls when a successful request is logged as a warning.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Hint tables",
+          "lineRange": [
+            35,
+            61
+          ],
+          "explanation": "`STATUS_HINTS` maps HTTP status codes and `ITSM_HINTS` maps domain exception class names to a plain-English 'Likely cause'. The ITSM hints are more specific and are tried first in `itsm_error_handler`, falling back to the status-code hint. Keeping these as data makes it easy to add guidance for a new exception without touching handler code.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Helpers and identifying the user",
+          "lineRange": [
+            64,
+            109
+          ],
+          "explanation": "`_is_database_outage` detects PyMongo connection failures so they can become a 503. `identify_user` decodes the JWT from the Authorization header or the `access_token` cookie without a database call, so even failing requests can be attributed to a user in the logs, and it distinguishes expired from invalid tokens. `_request_details` and `_rid` read the per-request context set by the middleware, falling back to a fresh id outside a request.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Request logging middleware",
+          "lineRange": [
+            112,
+            157
+          ],
+          "explanation": "`RequestLoggingMiddleware` reuses an incoming `X-Request-ID` only if it matches a strict alphanumeric pattern, which prevents log injection; otherwise it generates an 8-character id. It stores the id, user and client in the `request_ctx` context variable so every log line written during the request is tagged. Any exception that no handler dealt with is logged with timing and turned into a JSON 500, or a 503 for database outages. Health checks are logged at DEBUG, slow requests as warnings, and the context is always reset in `finally`.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Domain error handler",
+          "lineRange": [
+            160,
+            170
+          ],
+          "explanation": "Handles any `ITSMError` raised by the domain or services, using the exception's own `status_code` and `message`. These are expected business-rule refusals, so they are logged as warnings with the code location from `where_in_code`. The response includes the error class name, the request id and any `extra` fields the exception carries, such as duplicate-incident details.",
+          "tourOrder": 2
+        },
+        {
+          "title": "HTTP exception handler",
+          "lineRange": [
+            173,
+            188
+          ],
+          "explanation": "Handles `HTTPException`s raised by routes and by Starlette itself, including unmatched routes. A bare 404 'Not Found' gets a special hint about the `/api` prefix and HTTP method. 5xx codes are logged as errors and everything else as warnings, and any headers on the exception (for example `WWW-Authenticate`) are passed through to the response.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Validation error handler",
+          "lineRange": [
+            191,
+            214
+          ],
+          "explanation": "Turns Pydantic `RequestValidationError`s into a readable bullet list of field problems for the log. Values of sensitive fields such as passwords, codes or tokens are replaced with `[hidden]` both in the log and in the JSON response, using `is_sensitive` from `logging_config.py`. The hint points developers to `app/models/schemas.py`, where the field rules live.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Registering everything",
+          "lineRange": [
+            217,
+            222
+          ],
+          "explanation": "`register_error_handling` installs the middleware and the three exception handlers on the app. Its docstring states the ordering requirement that `server.py` follows: register this before adding `CORSMiddleware`, so that CORS wraps the error responses and the browser can read their message.",
+          "tourOrder": 2
+        }
+      ]
+    },
+    "backend/app/core/logging_config.py": {
+      "overview": "Configures human-readable logging for the backend: a console handler plus rotating `app.log` and `errors.log` files, a formatter that prints a summary line followed by an indented details block, and helpers that redact secrets, locate the failing project line and translate common exceptions into plain-English causes and fixes. `server.py` calls `setup_logging()` before any other app import, and `error_handling.py` and `db.py` use `log_exception`, which is why this file belongs to the startup infrastructure in Tour Step 2.",
+      "sections": [
+        {
+          "title": "Format description and request context",
+          "lineRange": [
+            1,
+            29
+          ],
+          "explanation": "The docstring shows the exact log line format and the two output files. `BACKEND_ROOT` is computed from this file's location so project paths can be shown relative to `backend/`. `request_ctx` is a `ContextVar`, which keeps request data separate between concurrent asyncio requests where a plain global would mix them up.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Redaction helpers",
+          "lineRange": [
+            31,
+            62
+          ],
+          "explanation": "`is_sensitive` flags field names that contain words like password, token or secret, plus an exact-match list for short names such as `code` and `key`. `redact` recursively hides those values, caps lists at 20 items and strings at 300 characters, and has a depth limit to stop runaway recursion. `redact_url` hides credentials in connection strings like `MONGO_URL`, and `short` truncates a value's repr for log messages.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Context filter and project paths",
+          "lineRange": [
+            65,
+            84
+          ],
+          "explanation": "`_ContextFilter` copies the current request id onto each log record so the formatter can print it. `_project_path` returns a path relative to `backend/` only for the project's own files, returning `None` for virtualenv or site-packages files. `_PLUMBING` excludes `error_handling.py` so that log locations point at the code that actually failed, not the handler.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Project-focused tracebacks",
+          "lineRange": [
+            87,
+            120
+          ],
+          "explanation": "`format_traceback` builds a shortened traceback that hides framework and library frames behind a single '\u2026 N frames hidden \u2026' line, while always keeping the last frame. It walks the exception chain (`__cause__` and `__context__`, up to five links) and keeps only earlier exceptions that touched project code. Setting `LOG_FULL_TRACEBACKS=true` bypasses all of this and returns the standard traceback.",
+          "tourOrder": 2
+        },
+        {
+          "title": "HumanFormatter",
+          "lineRange": [
+            123,
+            155
+          ],
+          "explanation": "The custom formatter writes `timestamp | LEVEL | logger | req id | message`, with ANSI colours only when enabled. Anything passed as `extra={'details': {...}}` is printed as aligned 'Key : value' lines, with empty values dropped and multi-line values indented. Exception info is appended as the project-focused traceback, and a separator line closes multi-line entries.",
+          "tourOrder": 2
+        },
+        {
+          "title": "setup_logging",
+          "lineRange": [
+            158,
+            210
+          ],
+          "explanation": "Configures the root logger once (the `_log_dir` global makes repeat calls no-ops). It adds a coloured console handler and two `RotatingFileHandler`s (5 MB, 5 backups), with `errors.log` limited to warnings. Uvicorn's own loggers are redirected into this format, and its access log is disabled because the middleware writes a better one. Noisy libraries are raised to WARNING, and if the log folder cannot be created the app keeps running with console logging and a warning.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Locating the failing line",
+          "lineRange": [
+            213,
+            230
+          ],
+          "explanation": "`where_in_code` walks an exception's traceback and keeps the deepest frame that is inside the project and not plumbing. It returns a compact string such as `app/services/incident_service.py:212 in transition()  \u2192  <source line>`, which fills the 'Where' field of error logs.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Explaining exceptions in plain English",
+          "lineRange": [
+            233,
+            318
+          ],
+          "explanation": "`explain_exception` maps exception types to a (what happened, how to fix) pair: MongoDB connection and duplicate-key errors, invalid ObjectIds, SMTP failures (with a Gmail App Password hint), httpx timeouts, JWT errors, Pydantic errors, missing settings (an upper-case `KeyError` key is treated as a missing env variable) and general programming errors. Each optional library import is wrapped in try/except so a missing package cannot break logging. A generic fallback is returned when nothing matches.",
+          "tourOrder": 2
+        },
+        {
+          "title": "log_exception",
+          "lineRange": [
+            321,
+            329
+          ],
+          "explanation": "The single entry point other modules use to log a failure: it attaches the plain-English summary, the error message, caller-supplied details, the code location and the fix hint as the `details` block. `with_traceback=False` lets callers such as the database retry loop log expected, repeated failures without traceback noise.",
+          "tourOrder": 2
+        }
+      ]
+    },
+    "backend/app/services/seed.py": {
+      "overview": "Idempotent seeding of reference data and demo accounts, called by `init_db` in `db.py` on every startup (Tour Step 2). It upserts categories, IT services with criticality scores, default settings, default SLA policies (including a migration from older defaults) and demo admin, technician and customer users. Most writes use `$setOnInsert`, so restarting the server never overwrites data that users or admins have since changed.",
+      "sections": [
+        {
+          "title": "Default SLA targets",
+          "lineRange": [
+            1,
+            10
+          ],
+          "explanation": "`DEFAULT_SLA_TARGETS` maps each priority to (respond, resolve) minutes, matching the project-brief table in the README: P1 5/30 down to P4 4 h/24 h. `OLD_DEFAULT_SLA_TARGETS` is kept only to recognise and upgrade databases seeded with the previous defaults.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Categories, services and settings",
+          "lineRange": [
+            12,
+            27
+          ],
+          "explanation": "Each category and service is upserted by name with `$setOnInsert`, so existing records are left alone and duplicates are never created. Services carry a `criticality` from 1 to 3 that feeds the priority calculation. The settings document is created from `SettingsRepository.DEFAULTS` only if it does not exist; the repository is imported inside the function, which avoids import-time coupling.",
+          "tourOrder": 2
+        },
+        {
+          "title": "SLA policies and migration",
+          "lineRange": [
+            29,
+            41
+          ],
+          "explanation": "For each priority, a global default policy (`service_id: None`) is inserted if missing. A second update matches only policies that still hold exactly the old default values and moves them to the new targets, so policies an admin has edited are untouched. This is a small, safe in-place data migration.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Admin account",
+          "lineRange": [
+            43,
+            52
+          ],
+          "explanation": "The admin email and password come from `ADMIN_EMAIL` and `ADMIN_PASSWORD`, with public defaults. Unlike the other accounts, the password hash, role and active flag are written with `$set` on every startup, so the environment value always wins and a password changed through the app is reset at the next restart.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Demo technicians",
+          "lineRange": [
+            54,
+            71
+          ],
+          "explanation": "Four technicians with distinct skill sets are created, with emails derived from their names. Only the role is enforced with `$set`; the password, skills, capacity and active state use `$setOnInsert`, so password resets and admin deactivations survive restarts, as the inline comment explains. The skill lists give the skill-based assignment strategies something to match against.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Demo customers and failure handling",
+          "lineRange": [
+            73,
+            92
+          ],
+          "explanation": "Seeds three customer accounts, one with a BITS-style email from which a student id and phone number are set. The whole function is wrapped in try/except that logs with `logger.exception` and re-raises, so a seeding failure is visible and is handled by the retry logic in `init_db`.",
+          "tourOrder": 2
+        }
+      ]
+    },
+    "backend/server.py": {
+      "overview": "The FastAPI entry point (`uvicorn server:app`) and the centre of Tour Step 2. It loads `.env` and configures logging before importing anything else, logs a startup summary of what is configured, starts MongoDB initialisation and the background SLA monitor in the lifespan hook, mounts every router under `/api`, and installs error handling and CORS in a deliberate order.",
+      "sections": [
+        {
+          "title": "Environment-first imports",
+          "lineRange": [
+            1,
+            15
+          ],
+          "explanation": "The import order is intentional: `load_dotenv` runs first because modules such as `app.core.db` read environment variables at import time, and `setup_logging()` runs next so that any log output during later imports already uses the project format. Only then are FastAPI, the database handle, the error handling and the ten routers imported.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Startup configuration summary",
+          "lineRange": [
+            18,
+            46
+          ],
+          "explanation": "`log_configuration` writes one readable block showing the MongoDB URL (with credentials redacted), CORS origins and whether Google sign-in, SMTP and Gemini are configured. It then checks `JWT_SECRET`: an error if it is missing (every sign-in would fail) and a warning if it looks like a placeholder or is under 16 characters, because a known secret lets anyone forge admin tokens. A missing SMTP setup is also warned about with a concrete fix.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Background SLA loop",
+          "lineRange": [
+            49,
+            60
+          ],
+          "explanation": "`sla_loop` runs forever, calling `container.sla_monitor.run_once()` and sleeping 60 seconds between passes. Exceptions are caught and logged so one bad pass never kills the loop. The container is imported inside the function, deferring construction of the whole object graph until the loop starts.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Lifespan hook",
+          "lineRange": [
+            63,
+            78
+          ],
+          "explanation": "The `asynccontextmanager` lifespan runs startup code before `yield`: log the configuration, await `init_db()` (which retries until MongoDB is ready) and start the SLA loop as an asyncio task stored on `app.state`. The `finally` block cancels that task, waits for it while suppressing `CancelledError`, and closes the Motor client for a clean shutdown.",
+          "tourOrder": 2
+        },
+        {
+          "title": "App, routers and health check",
+          "lineRange": [
+            80,
+            87
+          ],
+          "explanation": "Creates the FastAPI app with the lifespan and mounts each router module's `router` under the `/api` prefix in one loop. `/api/health` is a lightweight liveness endpoint; the request middleware logs it only at DEBUG to keep logs quiet.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Middleware ordering",
+          "lineRange": [
+            90,
+            95
+          ],
+          "explanation": "Error handling is registered before CORS. In Starlette the middleware added last wraps the others, so CORS is outermost and adds its headers even to 500 responses produced by the logging middleware; without this, browsers would hide the real error behind a generic network error. Origins come from the comma-separated `CORS_ORIGINS`, and `X-Request-ID` is exposed so the frontend can read it.",
+          "tourOrder": 2
+        }
+      ]
+    },
+    "backend/app/core/container.py": {
+      "overview": "The composition root explained in Tour Step 3. The `Container` class builds every repository, notification channel, observer and service exactly once and passes collaborators in through constructors (hand-written dependency injection). A module-level `container` singleton is created from the shared `db`, and routers and the SLA loop import ready-made objects from it instead of constructing their own.",
+      "sections": [
+        {
+          "title": "Imports of every collaborator",
+          "lineRange": [
+            1,
+            15
+          ],
+          "explanation": "The docstring states the file's role. The imports alone show the whole architecture: the event bus from the domain, all MongoDB repositories, the incident, intelligence, notification, observer, SLA and two-factor services. This is the only module that needs to know about all of them.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Repositories",
+          "lineRange": [
+            18,
+            33
+          ],
+          "explanation": "Each repository wraps one MongoDB collection and receives the database handle through its constructor, so a test can pass a different database. `TwoFactorService` is built here too, receiving the security-event repository it logs to: an example of one collaborator being injected into another.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Notification channels",
+          "lineRange": [
+            35,
+            41
+          ],
+          "explanation": "An `SmtpEmailAdapter` (Adapter pattern) is created once and injected into `SmtpEmailChannel`. The `NotificationDispatcher` receives a list of channels: in-app, simulated email and real SMTP. As the comment notes, adding SMS or push later means adding one more channel to this list.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Event bus and observers",
+          "lineRange": [
+            43,
+            47
+          ],
+          "explanation": "This is where the Observer pattern is wired. The audit observer and notification observer subscribe to every event, while `SlaViolationObserver` subscribes only to `SLA_BREACHED` through the optional event-type filter. Services publish events without knowing who listens.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Services",
+          "lineRange": [
+            49,
+            53
+          ],
+          "explanation": "`IncidentService` receives ten collaborators (repositories, intelligence service, event bus and correlation alerts) instead of creating them, which makes its dependencies explicit. `SlaMonitor` receives the incident service as well, so escalation and auto-dispatch reuse the same lifecycle logic.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Module-level singleton",
+          "lineRange": [
+            56,
+            56
+          ],
+          "explanation": "`container = Container(db)` builds the object graph when the module is first imported. Python caches modules, so every `from app.core.container import container` gets the same instance and services are effectively singletons.",
+          "tourOrder": 3
+        }
+      ]
+    },
+    "backend/app/core/security.py": {
+      "overview": "Authentication and authorization helpers used across the API (Tour Step 4): bcrypt password hashing, JWT creation and decoding for access, refresh and MFA tokens, the safe public view of a user, and the FastAPI dependencies `get_current_user` and `require_roles` that protect routes. Token versions stored on the user let the app invalidate all existing sessions at once.",
+      "sections": [
+        {
+          "title": "Imports and constants",
+          "lineRange": [
+            1,
+            13
+          ],
+          "explanation": "Tokens are signed with HS256 using `JWT_SECRET`. MFA tokens, which only prove the password step of a two-step sign-in, last `MFA_TOKEN_MINUTES = 5`. The module reads users directly from the shared `db` handle.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Password hashing",
+          "lineRange": [
+            16,
+            17
+          ],
+          "explanation": "`hash_password` uses bcrypt with a fresh random salt per call, and `verify_password` checks a plaintext against a stored hash. The same helpers are reused in `auth.py` to hash password-reset codes, so even the short-lived codes are never stored in plaintext.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Token creation",
+          "lineRange": [
+            20,
+            38
+          ],
+          "explanation": "Three token types share `_encode`: access tokens (12 hours, carrying user id, email and role), refresh tokens (7 days) and MFA tokens (5 minutes). Each carries a `type` claim, so one kind cannot be used in place of another, and a `tv` token-version claim. Bumping `token_version` on the account makes every older token fail verification, which implements 'sign out of all other devices'.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Decoding tokens",
+          "lineRange": [
+            41,
+            47
+          ],
+          "explanation": "`decode_token` verifies signature and expiry and converts PyJWT errors into 401 `HTTPException`s with distinct 'Token expired' and 'Invalid token' messages. Note that `os.environ['JWT_SECRET']` raises `KeyError` if the secret is missing, which `server.py` warns about at startup.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Public user view",
+          "lineRange": [
+            50,
+            63
+          ],
+          "explanation": "`public_user` builds an explicit allow-list of fields that are safe to send to the browser, so the password hash and TOTP secrets can never leak through it. It also turns the stored `totp_enabled` flag into `two_factor_enabled` and supplies defaults for optional fields.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Loading the user behind a token",
+          "lineRange": [
+            66,
+            79
+          ],
+          "explanation": "`load_user_from_token` decodes the token, checks that its `type` matches what the caller expects, and loads the user by id. An invalid ObjectId is treated as 'user not found' rather than a crash. It rejects deactivated users and tokens whose `tv` does not match the account's current `token_version`, which is the server-side half of session revocation.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Current-user dependencies",
+          "lineRange": [
+            82,
+            97
+          ],
+          "explanation": "`token_from_request` accepts a `Bearer` header, a bare header value or the `access_token` cookie, supporting both the axios client and cookie-based sessions. `get_current_user_doc` returns the raw MongoDB document, while `get_current_user` returns the safe public dict that routes use with `Depends`.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Role-based access",
+          "lineRange": [
+            100,
+            104
+          ],
+          "explanation": "`require_roles(*roles)` is a dependency factory: it returns a new dependency that first resolves `get_current_user` and then checks the role. Failing the check raises `UnauthorizedOperationError`, a domain `ITSMError`, so it goes through the domain error handler, whereas missing or invalid tokens raise a 401 `HTTPException`. Routes write `Depends(require_roles('admin'))` to declare their permissions.",
+          "tourOrder": 4
+        }
+      ]
+    },
+    "backend/app/models/schemas.py": {
+      "overview": "The Pydantic request models and response-serialization helpers for the API (Tour Step 4). Field constraints such as minimum lengths, numeric ranges and regex patterns make FastAPI reject bad input with a 422 before any route code runs. `serialize` and `clean_doc` convert MongoDB documents to JSON-safe dicts and strip private fields like password hashes and TOTP secrets.",
+      "sections": [
+        {
+          "title": "Authentication requests",
+          "lineRange": [
+            1,
+            26
+          ],
+          "explanation": "Models for registration, login, Google sign-in and email password reset. Passwords require at least 8 characters, and the reset code must be exactly six digits through both length limits and a `^\\d{6}$` pattern. `GoogleAuthRequest` carries the nonce that `auth.py` compares with the one inside the Google ID token.",
+          "tourOrder": 4
+        },
+        {
+          "title": "AI and intelligence payloads",
+          "lineRange": [
+            28,
+            59
+          ],
+          "explanation": "`AIGeneratedDetails` is the schema that AI-generated incident suggestions must satisfy: bounded title and description lengths, impact and urgency from 1 to 3, a confidence between 0 and 1, and capped list lengths. Validating model output against a strict schema means a malformed AI reply is rejected instead of reaching the form. `SuggestRequest` and `ScopeCheckRequest` back the live suggestion and emergency-scope checks on the report form.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Admin-created users",
+          "lineRange": [
+            61,
+            68
+          ],
+          "explanation": "`CreateUserRequest` is used by admins to create staff accounts, with a role string and a `max_concurrent` capacity limited to 1-50. The mutable `[]` default for `skills` is safe in Pydantic, which copies defaults per instance, unlike a plain Python function default.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Incident payloads",
+          "lineRange": [
+            70,
+            114
+          ],
+          "explanation": "`IncidentCreate` holds the fields used for priority calculation (impact, urgency, business criticality, affected users) plus campus location details. Two flags let a reporter go ahead after a warning: `acknowledge_duplicate` and `confirm_in_scope`. `IncidentUpdate` makes every field optional for PATCH, `TransitionRequest` carries the target status and optional resolution or feedback data, and `AssignRequest` and `NoteInput` are the small payloads for assignment and notes.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Catalog and admin configuration",
+          "lineRange": [
+            116,
+            145
+          ],
+          "explanation": "Inputs for IT services, categories, SLA policies, user edits and global settings. `SlaPolicyInput` restricts priority to `P1`-`P4` with a regex and bounds the minute values. `SettingsUpdate` lets admins switch the assignment and priority strategy by name and tune escalation, correlation and the admin 2FA requirement; every field is optional so partial updates work.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Serialization and private fields",
+          "lineRange": [
+            146,
+            168
+          ],
+          "explanation": "`serialize` recursively converts `ObjectId` to string and `datetime` to ISO format, and drops any key in `PRIVATE_FIELDS` at every nesting level. `clean_doc` renames MongoDB's `_id` to `id` before serializing. Because routers pass documents through these helpers, secrets are stripped centrally rather than per endpoint.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Account and security requests",
+          "lineRange": [
+            171,
+            195
+          ],
+          "explanation": "Models for the second sign-in step, resetting a password with an authenticator code, profile edits, password changes, generic code input and notification preferences. Codes allow up to 20 characters so that longer backup codes fit as well as 6-digit TOTP codes. `current_password` is optional so Google-only accounts can set their first password. `PHONE_PATTERN` is defined here as a shared phone-number regex.",
+          "tourOrder": 4
+        }
+      ]
+    },
+    "backend/app/routers/auth.py": {
+      "overview": "The `/api/auth` router covering registration, password login with optional two-step verification, email and authenticator-based password resets, Google Workspace sign-in, logout and the current-user endpoint. It relies on the helpers in `security.py`, the schemas in `schemas.py` and services from the container, as described in Tour Step 4. Unlike the incidents router, it reads and writes the `users` and reset collections directly through `db` rather than through repositories.",
+      "sections": [
+        {
+          "title": "Setup and student id extraction",
+          "lineRange": [
+            1,
+            34
+          ],
+          "explanation": "Imports the security helpers, request schemas, container, `UserFactory` and domain exceptions. `BITS_EMAIL_DOMAIN` comes from `ALLOWED_EMAIL_DOMAIN`. `extract_student_id` pulls a 6-10 digit number out of a BITS email prefix, falling back to stripping leading letters. A module-level `SmtpEmailAdapter` is created here for reset emails, separate from the one the container builds.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Reset email and issuing sessions",
+          "lineRange": [
+            37,
+            53
+          ],
+          "explanation": "`_send_reset_email` sends the one-time code through the email adapter. `issue` creates access and refresh tokens that include the user's current `token_version`, sets them as `httponly`, `samesite=lax` cookies (secure only when `COOKIE_SECURE=true`), and also returns the access token and public user in the body for the axios client.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Registration",
+          "lineRange": [
+            55,
+            74
+          ],
+          "explanation": "Self-registration is limited to the BITS email domain and duplicate emails raise `AlreadyExistsError`. The user document is built through `UserFactory.create(Role.CUSTOMER, ...)`, so self-registered users are always customers and the domain decides how a role maps to a `User` subclass. Account creation is recorded in the security log before a session is issued.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Password login",
+          "lineRange": [
+            76,
+            91
+          ],
+          "explanation": "A wrong email and a wrong password both raise the same `AuthenticationError`, and failed attempts on real accounts are logged as security events. Deactivated accounts get a 403. If the authenticator is enabled, no session is issued; the response holds a 5-minute MFA token and the allowed methods, which is step one of two-step sign-in.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Second sign-in step",
+          "lineRange": [
+            94,
+            106
+          ],
+          "explanation": "Accepts the MFA token (type `mfa`) plus a code. Token errors are replaced by a friendly 'took too long' message. `container.two_factor.verify` checks the TOTP or backup code and returns which method succeeded. The user is reloaded because verification may change it (for example by using a backup code) before the session is issued with the number of backup codes left.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Requesting a reset code",
+          "lineRange": [
+            108,
+            147
+          ],
+          "explanation": "Returns the same generic message for unknown or deactivated accounts so the endpoint cannot reveal which emails are registered. It limits requests to three per hour using the TTL-indexed `password_reset_requests` collection, and generates the code with `secrets.randbelow`. The email is sent before the code is stored; if sending fails, an `ExternalServiceError` (503) is raised. The stored code is bcrypt-hashed and expires in 10 minutes.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Confirming a reset",
+          "lineRange": [
+            149,
+            169
+          ],
+          "explanation": "Looks up the newest unexpired reset for the email and rejects it after five wrong attempts, counting each failure with `$inc`. On success the password hash is replaced and `token_version` is incremented, which signs out every existing session. All reset records for that email are then deleted and the change is security-logged.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Reset with authenticator",
+          "lineRange": [
+            172,
+            186
+          ],
+          "explanation": "An alternative reset path that needs no email: the user proves possession of their authenticator app instead. Unknown accounts, deactivated accounts and accounts without 2FA all get the same error, avoiding account enumeration. Like the email path, it bumps `token_version` and clears pending email resets.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Google sign-in",
+          "lineRange": [
+            188,
+            245
+          ],
+          "explanation": "The Google ID token is verified server-side with `google-auth` against `GOOGLE_CLIENT_ID`, then issuer and `email_verified` are checked, the nonce is compared in constant time, and the email domain is enforced. Existing users keep their role; only the link flag, display name and student id may be updated, so Google sign-in never elevates privileges. New users are created as customers with an unguessable random password hash so the email/password form cannot be used on Google-only accounts. The credential itself is never logged.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Logout and current user",
+          "lineRange": [
+            247,
+            256
+          ],
+          "explanation": "`logout` just deletes the two cookies; bearer tokens stay valid until they expire unless the token version is bumped. `/me` uses the `get_current_user` dependency and adds `two_factor_required` when the user is an admin and the settings require admin 2FA, which lets the frontend push admins to set up an authenticator.",
+          "tourOrder": 4
+        }
+      ]
+    },
+    "backend/app/routers/incidents.py": {
+      "overview": "The `/api/incidents` REST surface for the core workflow (Tour Step 4): search, create, detail, state transitions, manual and automatic assignment, notes and updates. It deliberately contains no business logic; each handler validates input through a Pydantic schema, declares authorization with a security dependency, and delegates to the `IncidentService` taken from the container (Step 3), which is explored in Step 5.",
+      "sections": [
+        {
+          "title": "Router setup",
+          "lineRange": [
+            1,
+            16
+          ],
+          "explanation": "The router gets its `IncidentService` from the container singleton once at import time, so it never constructs services itself. `STAFF` groups the admin and technician role values for reuse in dependencies. `out` is a thin wrapper over `clean_doc`, so every response is JSON-safe and stripped of private fields.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Listing and search",
+          "lineRange": [
+            19,
+            28
+          ],
+          "explanation": "All search filters (text, status, priority, category, service, technician, SLA status, scope, date range, escalation) arrive as optional query parameters, and `limit` is bounded to 1-500 with `Query`. The handler packs them into a dict and passes them, together with the user, to `service.search`, which applies role-based visibility.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Creating an incident",
+          "lineRange": [
+            31,
+            33
+          ],
+          "explanation": "Returns 201 Created. `require_roles` allows customers and staff, and the `IncidentCreate` schema validates the body before the handler runs. The service handles scope checks, duplicate detection, priority, SLA and assignment.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Incident detail",
+          "lineRange": [
+            36,
+            48
+          ],
+          "explanation": "The one handler with visible orchestration: it loads the incident, calls `service.assert_access` to enforce per-role visibility, and returns a bundle with the incident, the transitions this user may perform (from the State pattern), and the audit trail. Technician recommendations, related incidents and suggested resolutions are only computed for staff, which both hides them from customers and avoids unnecessary work.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Transitions and assignment",
+          "lineRange": [
+            51,
+            63
+          ],
+          "explanation": "`transition` is open to any signed-in user because the State pattern in the service decides which role may make which move. Manual `assign` is limited to staff, and `auto-assign`, which runs the configured assignment strategy, is limited to admins. Both assignment routes load the incident first so a missing id fails before the strategy runs.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Notes and updates",
+          "lineRange": [
+            66,
+            73
+          ],
+          "explanation": "Any signed-in user may add a note; access to the incident is checked inside the service. `PATCH` updates are limited to staff and accept the all-optional `IncidentUpdate` schema, so only the provided fields change.",
+          "tourOrder": 4
+        }
+      ]
+    },
+    "backend/app/services/incident_service.py": {
+      "overview": "Application service that coordinates the whole incident lifecycle for the incidents router. It owns no business rules itself: it loads documents through repositories, wraps them in the `Incident` aggregate, calls domain methods (classify, apply_priority, assign_to, transition_to), saves only the recorded changes, and publishes `IncidentEvent`s so observers can handle audit and notifications. This is the file Tour Step 5 centres on, and it is where the State, Strategy, Factory and Observer patterns from Steps 6-8 come together.",
+      "sections": [
+        {
+          "title": "Imports and lookup tables",
+          "lineRange": [
+            1,
+            50
+          ],
+          "explanation": "The module docstring states the design: IncidentService *has* repositories, an IntelligenceService, settings and an EventBus, and only coordinates them. `OFFLINE_SERVICE_BY_CATEGORY` ties the three physical-support categories (Carpenter, Electrician, Technician) to the service each must use, and `TRANSITION_EVENTS` maps target statuses to more specific event types, falling back to `STATUS_CHANGED`. `_duration` formats minutes as `min`/`h`/`days` for human-readable SLA messages, and `build_location` is a thin backwards-compatibility wrapper around the `Location` value object.",
+          "tourOrder": 5
+        },
+        {
+          "title": "Constructor and helpers",
+          "lineRange": [
+            52,
+            100
+          ],
+          "explanation": "All collaborators are injected through the constructor (they are built once in the composition root), which keeps the service testable. `actor()` turns a raw user dict into the right `User` subclass via `UserFactory`, so access checks can call the polymorphic `can_view`. `allowed_transitions` asks the State object which targets the caller's role may reach and hides `ASSIGNED`, because assignment has its own endpoint. `_publish` builds an immutable event from `incident.snapshot()` and `actor.to_actor()`, unwrapping enum values; `policy()` raises `MissingSlaConfigError` when no SLA matches, and `calculate_priority` picks the strategy named in settings and clamps service criticality to 1..3.",
+          "tourOrder": 5
+        },
+        {
+          "title": "Creating an incident",
+          "lineRange": [
+            103,
+            176
+          ],
+          "explanation": "`create` runs validation in a deliberate order: scope check (unless the reporter confirmed), duplicate detection (unless acknowledged), then service, category and location rules for hostel/offline support. It infers a student ID from the email prefix when none is given. The incident is built by `IncidentFactory`, moved NEW to CLASSIFIED by the system, given a priority and SLA clock, and saved. It then publishes four lifecycle events (created, classified, priority calculated, SLA applied) plus optional duplicate and scope-override notes, checks for correlated reports, and optionally auto-assigns, logging rather than failing if no technician is free.",
+          "tourOrder": 5
+        },
+        {
+          "title": "Correlation detection",
+          "lineRange": [
+            178,
+            198
+          ],
+          "explanation": "`_check_correlation` raises a single 'possible major incident' alert when several incidents hit the same service inside the configured time window. The window and threshold come from settings, the clustering comes from the intelligence service, and an existing alert for the same service inside the window suppresses duplicates. The alert is stored in its own collection and also published as `CORRELATION_DETECTED`, so the notification observer can tell administrators.",
+          "tourOrder": 5
+        },
+        {
+          "title": "Role-aware search",
+          "lineRange": [
+            201,
+            247
+          ],
+          "explanation": "`search` builds a list of MongoDB conditions and combines them with `$and`. Customers only ever see their own reports; technicians see assigned work and the unassigned queue, mirroring `Technician.can_view` so list and detail access agree. Optional filters cover status, priority, SLA status, escalation, date ranges (parsed by `_parse_day`, with an exclusive end date one day later) and a free-text query. The text query is passed through `re.escape` before being used as a case-insensitive regex, which stops user input from being interpreted as regex syntax, and the result size is capped at 500.",
+          "tourOrder": 5
+        },
+        {
+          "title": "Manual and automatic assignment",
+          "lineRange": [
+            250,
+            281
+          ],
+          "explanation": "`assign` checks access, allows technicians only to self-assign, and verifies the target is an active technician. Re-assigning to the same person is a no-op. The real rules (allowed states, workload capacity with the P1 exception) live in `Incident.assign_to` and `Technician.ensure_capacity`; the service only supplies the current open-incident count and records `last_assigned_at`, which the round-robin strategy reads. `auto_assign` looks up the configured `AssignmentStrategy`, ranks technician profiles and delegates to `assign` with the strategy name for the audit message.",
+          "tourOrder": 5
+        },
+        {
+          "title": "SLA breach recording",
+          "lineRange": [
+            284,
+            299
+          ],
+          "explanation": "`record_sla_breaches` publishes `SLA_BREACHED` at most once per deadline kind (response, resolution). It uses the `violations_recorded` list stored on the SLA record to remember what has already been reported, saves that marker first, and only then publishes. The same method is used after transitions and by the background SLA monitor, so the 'once per deadline' guarantee holds no matter which path notices the breach.",
+          "tourOrder": 5
+        },
+        {
+          "title": "State transitions",
+          "lineRange": [
+            301,
+            338
+          ],
+          "explanation": "`transition` validates the requested status, refuses `ASSIGNED` (assignment has its own endpoint) and requires a resolution summary for RESOLVED. `incident.transition_to` delegates to the State pattern, which raises if the move or role is not allowed. Side effects depend on the target: acknowledge stops the response clock, resolve stores a Resolution, a RESOLVED to IN_PROGRESS move is treated as a reopen with its own event, and close records feedback. The event type and description are chosen afterwards, and SLA breaches are re-checked before returning the fresh document.",
+          "tourOrder": 5
+        },
+        {
+          "title": "Notes and detail updates",
+          "lineRange": [
+            340,
+            382
+          ],
+          "explanation": "`add_note` refuses notes on closed incidents and generates the note ID with `ObjectId()`; the repository appends new notes with `$push` instead of overwriting the array. `update` applies only the non-null fields, and if any priority input (impact, urgency, criticality, affected users) changed it recalculates priority with the current strategy and re-applies the SLA policy, looking up the service criticality if the document lacks it. Two events can result: `INCIDENT_UPDATED` listing the changed fields, and `PRIORITY_CHANGED` when the priority actually moved.",
+          "tourOrder": 5
+        }
+      ]
+    },
+    "backend/app/domain/enums.py": {
+      "overview": "Defines the shared vocabularies used across the backend: user roles, the nine incident statuses, priorities P1-P4 and SLA statuses. Every enum subclasses `str`, so values compare equal to the plain strings stored in MongoDB and serialise to JSON without conversion. It supports Tour Step 6, where the state machine and domain model are built on these values.",
+      "sections": [
+        {
+          "title": "String-backed enums",
+          "lineRange": [
+            1,
+            8
+          ],
+          "explanation": "Each class inherits from both `str` and `Enum`, which means `Role.ADMIN == 'admin'` is true and the values can be written straight into documents and API responses. `Role.SYSTEM` represents automation (SLA monitor, auto-assignment) rather than a human account. `IncidentStatus` lists the full lifecycle from NEW to CLOSED that `state.py` turns into a state machine, and `SlaStatus` holds the four values the SLA evaluator produces. The compact one-line style with semicolons is legal Python but unusual; it trades readability for brevity.",
+          "tourOrder": 6
+        },
+        {
+          "title": "Open statuses list",
+          "lineRange": [
+            9,
+            9
+          ],
+          "explanation": "`OPEN_STATUSES` is a list of plain string values for every status before RESOLVED. It is used in MongoDB `$in` queries (for example to count a technician's open workload in the repository) and by `Incident.is_open`. Note that RESOLVED and VERIFIED are not counted as open, so a resolved incident no longer counts against a technician's capacity.",
+          "tourOrder": 6
+        }
+      ]
+    },
+    "backend/app/domain/exceptions.py": {
+      "overview": "The custom exception hierarchy for business-rule failures. Every error derives from `ITSMError` and carries its own HTTP status code, so routers and services simply raise domain exceptions and a single handler in `app/core/error_handling.py` converts them to JSON responses. It is part of the domain layer covered in Tour Step 6, and these exceptions are raised throughout the State pattern, the strategies and the IncidentService.",
+      "sections": [
+        {
+          "title": "Base ITSMError",
+          "lineRange": [
+            1,
+            15
+          ],
+          "explanation": "`ITSMError` stores a human-readable `message` and an `extra` dict of keyword arguments that the error handler adds to the JSON body. The default `status_code` is 400, and subclasses override it as a class attribute. This is how, for example, the admin router attaches `code='2fa_required'` and `OutOfScopeError` carries the scope assessment back to the client.",
+          "tourOrder": 6
+        },
+        {
+          "title": "Input and authentication errors",
+          "lineRange": [
+            18,
+            39
+          ],
+          "explanation": "These cover bad requests and access problems: `InvalidInputError` (422), `InvalidCodeError` (a 422 for wrong one-time codes), `TooManyAttemptsError` (429), `AuthenticationError` (401) and `UnauthorizedOperationError` (403). Because `InvalidCodeError` subclasses `InvalidInputError`, it inherits the 422 status code while still being catchable on its own.",
+          "tourOrder": 6
+        },
+        {
+          "title": "Lookup and lifecycle conflicts",
+          "lineRange": [
+            42,
+            77
+          ],
+          "explanation": "`ResourceNotFoundError` (404) has a `ServiceNotFoundError` subclass, so callers can catch either level. The 409 Conflict family covers lifecycle and data clashes: illegal state transitions, no available technician, duplicates, existing names and configuration still in use. `WorkloadExceededError` subclasses `TechnicianUnavailableError`, which lets `create` catch the broader type when auto-assignment fails for any capacity-related reason.",
+          "tourOrder": 6
+        },
+        {
+          "title": "Scope, configuration and infrastructure errors",
+          "lineRange": [
+            80,
+            97
+          ],
+          "explanation": "`OutOfScopeError` (422) is raised when a report is not an IT or facilities issue. `MissingSlaConfigError` uses 500 because a missing SLA policy is a server configuration problem, not a user mistake. `ExternalServiceError` and `DatabaseUnavailableError` use 503 to signal temporary unavailability of SMTP, Google, AI or MongoDB.",
+          "tourOrder": 6
+        }
+      ]
+    },
+    "backend/app/domain/models.py": {
+      "overview": "The object-oriented core of the project. It defines an abstract `User` hierarchy with polymorphic access rules, immutable catalog value objects, the parts an incident is composed of, and the `Incident` aggregate root that is the only way incident documents are changed. Tour Step 6 calls this file the OOP heart of the system; the IncidentService from Step 5 calls these methods, and the repository from Step 9 persists the changes they record.",
+      "sections": [
+        {
+          "title": "Design notes and imports",
+          "lineRange": [
+            1,
+            34
+          ],
+          "explanation": "The docstring includes a class diagram and explains the rules the file follows: inheritance only for real is-a relationships, composition for incident parts, private fields behind read-only properties, and state changes only through rule-enforcing methods. It also explains the persistence contract: classes convert to and from MongoDB documents, and callers save `changes()` instead of editing documents directly.",
+          "tourOrder": 6
+        },
+        {
+          "title": "Abstract User base class",
+          "lineRange": [
+            37,
+            80
+          ],
+          "explanation": "`User` is an `ABC` that validates and normalises name, email and phone in its constructor and stores them in underscore-prefixed fields. The read-only properties are written as `property(lambda self: ...)` one-liners. `can_view` is abstract, so each subclass must define its own access rule. `to_doc` uses the template-method hook `_extra_fields` so subclasses can add role-specific fields, and `to_actor` produces the small dict that goes into events and audit records.",
+          "tourOrder": 6
+        },
+        {
+          "title": "Concrete user roles",
+          "lineRange": [
+            83,
+            157
+          ],
+          "explanation": "Each subclass fixes its `role` and implements `can_view` differently: an `Employee` sees only incidents it reported, a `Technician` sees unassigned, own or still-new incidents, and an `Administrator` and the `SystemActor` see everything. `Technician` validates `max_concurrent` against `MAX_CAPACITY`, removes duplicate skills while keeping order via `dict.fromkeys`, and `ensure_capacity` lets P1 incidents exceed the workload limit. `SYSTEM` is a module-level singleton used as the actor for automated actions.",
+          "tourOrder": 6
+        },
+        {
+          "title": "UserFactory",
+          "lineRange": [
+            160,
+            191
+          ],
+          "explanation": "The Factory pattern picks the right `User` subclass for a role string. `create` validates the role and email format, and always returns the shared `SYSTEM` instance for the system role. `from_doc` accepts either a MongoDB document (`_id`) or the API's public user dict (`id`), fills safe defaults for missing name or email, and clamps `max_concurrent` so older or malformed records still load.",
+          "tourOrder": 6
+        },
+        {
+          "title": "Catalog value objects",
+          "lineRange": [
+            194,
+            225
+          ],
+          "explanation": "`ItService` and `SlaPolicy` are frozen dataclasses, meaning immutable value objects built from documents with `from_doc`. `ItService.criticality` (1 to 3) feeds into the weighted priority strategy. `SlaPolicy.start_clock` delegates to `build_sla` in `sla.py` to compute response and resolution deadlines from the incident's creation time.",
+          "tourOrder": 6
+        },
+        {
+          "title": "Incident parts",
+          "lineRange": [
+            228,
+            305
+          ],
+          "explanation": "`Location`, `Note`, `Resolution` and `Closure` are frozen dataclasses composed into an incident. Each validates itself in `__post_init__`: an allowed location type, a non-empty resolution summary, a rating from 1 to 5. `Location.formatted` builds a readable place string for each of the online, hostel and academics cases, and `to_doc` stores that string next to the raw fields so it can be searched and displayed without recomputing it.",
+          "tourOrder": 6
+        },
+        {
+          "title": "Incident aggregate: state and change tracking",
+          "lineRange": [
+            310,
+            378
+          ],
+          "explanation": "`Incident` wraps a copy of the stored document and keeps the matching State object from `StateFactory`. Fields are exposed through read-only properties. Every modification goes through `_set`, which updates the document and also records the key in `_changes`, so the repository can write only changed fields with `$set`. New notes are tracked separately so they can be appended with `$push`, and `mark_saved` clears both after persistence. `snapshot` returns the compact summary that events carry.",
+          "tourOrder": 6
+        },
+        {
+          "title": "Incident aggregate: behaviour",
+          "lineRange": [
+            381,
+            488
+          ],
+          "explanation": "These methods enforce the business rules. `transition_to` delegates to the current State object, which raises on illegal moves. `apply_priority` restarts the SLA clock only when the priority changes, but keeps `responded_at`, `resolved_at` and `violations_recorded` from the previous record. `assign_to` allows (re)assignment only from CLASSIFIED or ASSIGNED and checks technician capacity. Other methods handle acknowledging, resolving, reopening, closing, notes, detail edits (rebuilding `Location` when location fields change), SLA refresh, violation markers and escalation history.",
+          "tourOrder": 6
+        },
+        {
+          "title": "IncidentFactory",
+          "lineRange": [
+            491,
+            512
+          ],
+          "explanation": "The factory builds a brand-new incident document in the NEW state with every field set explicitly, including `None` placeholders for priority, SLA, resolution and closure. It enforces a minimum title length and copies service and reporter details onto the incident (a deliberate denormalisation for fast listing and search). The IncidentService then immediately classifies the incident and applies priority before saving.",
+          "tourOrder": 6
+        }
+      ]
+    },
+    "backend/app/domain/state.py": {
+      "overview": "Implements the State pattern for the incident lifecycle. Each status has its own state class that declares which target statuses are reachable and which roles may trigger each move, and a registry-based factory returns the shared state instance for a status. `Incident.transition_to` in models.py delegates here, which is why illegal moves are rejected consistently everywhere (Tour Step 6).",
+      "sections": [
+        {
+          "title": "IncidentState base class",
+          "lineRange": [
+            1,
+            10
+          ],
+          "explanation": "The base class holds a `transitions` dict that maps each target status to the set of roles allowed to perform the move. `allowed_targets(role)` powers the role-specific action buttons in the UI, and `is_terminal` is true when no transitions remain. `transition` distinguishes two failure modes: a target that is not reachable at all raises `InvalidStateTransitionError` (409), while a reachable target that the role may not trigger raises `UnauthorizedOperationError` (403).",
+          "tourOrder": 6
+        },
+        {
+          "title": "Concrete lifecycle states",
+          "lineRange": [
+            11,
+            19
+          ],
+          "explanation": "Each subclass is a single line declaring its name and transition table, so the whole lifecycle can be read at a glance: NEW, CLASSIFIED, ASSIGNED, ACKNOWLEDGED, IN_PROGRESS, then either PENDING_INFO (back to IN_PROGRESS) or RESOLVED, and finally VERIFIED and CLOSED. Notable rules: only the customer or an admin can verify or reopen a resolved incident, customers can move PENDING_INFO back to IN_PROGRESS after providing info, and `ClosedState` has an empty table, which makes it terminal.",
+          "tourOrder": 6
+        },
+        {
+          "title": "StateFactory registry",
+          "lineRange": [
+            20,
+            23
+          ],
+          "explanation": "`StateFactory` builds one instance of every state class at import time and indexes them by status. The states hold no per-incident data, so sharing these instances is safe (they act like flyweights). `get` accepts either an enum or a raw string, because `S(status)` normalises the string stored in MongoDB.",
+          "tourOrder": 6
+        }
+      ]
+    },
+    "backend/app/domain/strategies.py": {
+      "overview": "Implements the Strategy pattern for the two decisions IncidentService delegates: calculating priority and choosing a technician. Each algorithm is a separate class behind an abstract interface, and factories look them up by the key stored in the admin settings, so the algorithm can be changed at runtime without editing the service. This is the core of Tour Step 7, together with the admin router that exposes the choice.",
+      "sections": [
+        {
+          "title": "Priority inputs and results",
+          "lineRange": [
+            1,
+            46
+          ],
+          "explanation": "`PriorityInput` is a dataclass that validates its own ranges in `__post_init__`: impact, urgency and both criticalities must be 1 to 3, and affected users at least 1. `PriorityResult` carries the priority, numeric score, strategy key and a human-readable explanation that ends up in the audit trail. `PriorityStrategy` is the abstract interface, with `key`, `name` and `description` class attributes that describe it to the admin UI.",
+          "tourOrder": 7
+        },
+        {
+          "title": "Priority strategies and factory",
+          "lineRange": [
+            49,
+            90
+          ],
+          "explanation": "`MatrixPriorityStrategy` is the classic ITIL impact times urgency grid. `WeightedScorePriorityStrategy` multiplies by the higher of business and service criticality and adds a stepped bonus for many affected users, so an outage of a critical service rises in priority even if the reporter underrates it. `PriorityStrategyFactory` keeps a registry keyed by `key` and falls back to the `weighted` default for unknown names; `describe` feeds the strategy picker in the admin settings.",
+          "tourOrder": 7
+        },
+        {
+          "title": "Technician profiles and ranking types",
+          "lineRange": [
+            95,
+            116
+          ],
+          "explanation": "`TechnicianProfile` is a read model assembled by the intelligence service: skills, current workload, category and service experience, average resolution time and last assignment time. `has_capacity` compares open incidents to the technician's limit. `Ranked` wraps a profile with a score and a per-factor breakdown, which only the smart strategy produces.",
+          "tourOrder": 7
+        },
+        {
+          "title": "AssignmentStrategy template method",
+          "lineRange": [
+            119,
+            136
+          ],
+          "explanation": "`select` is a template method shared by all strategies: subclasses only implement `rank`. It filters to technicians with free capacity, but for P1 incidents falls back to the full ranked list so critical work is never blocked by capacity, and raises `TechnicianUnavailableError` otherwise. The `tech` lambda unwraps `Ranked` objects with `getattr(r, 'technician', r)`, so `rank` may return either plain profiles or `Ranked` wrappers.",
+          "tourOrder": 7
+        },
+        {
+          "title": "Simple ranking strategies",
+          "lineRange": [
+            139,
+            175
+          ],
+          "explanation": "These strategies each rank with a single sort key. Skill-based prefers a category match, then capacity, then lighter load; load-balanced uses capacity and open count only. Round robin sorts ascending by `last_assigned_at`, treating 'never assigned' as the earliest timezone-aware datetime so those technicians go first. Experience-based sums category and service resolutions and breaks ties by faster average resolution, treating a missing average as very slow.",
+          "tourOrder": 7
+        },
+        {
+          "title": "Smart and priority-based strategies",
+          "lineRange": [
+            178,
+            210
+          ],
+          "explanation": "`SmartRecommendationStrategy` computes a weighted score from five normalised factors (skill 35%, free capacity 25%, category experience 20%, service experience 10%, speed 10%) and keeps the breakdown so the UI can explain the recommendation. `PriorityBasedStrategy` is a composite: for P1/P2 it reuses the experience strategy, ranking skilled technicians before everyone else, and for P3/P4 it delegates to load balancing. This shows strategies being reused inside other strategies.",
+          "tourOrder": 7
+        },
+        {
+          "title": "AssignmentStrategyFactory",
+          "lineRange": [
+            213,
+            224
+          ],
+          "explanation": "Mirrors the priority factory: a registry keyed by each class's `key`, a `smart` default for unknown names, and `describe` for the admin UI. Because the admin router validates new settings against `registry`, adding a strategy class here automatically makes it selectable.",
+          "tourOrder": 7
+        }
+      ]
+    },
+    "backend/app/routers/admin.py": {
+      "overview": "FastAPI router for administrator and IT-manager endpoints under `/admin`: user and technician management, IT services, categories, SLA policies, strategy and automation settings, the audit log and the SLA violation register. Its role in Tour Step 7 is the settings endpoints, which let an admin switch the priority and assignment strategies at runtime by name. Every endpoint depends on the `admin` guard, and errors are raised as domain exceptions for the central error handler.",
+      "sections": [
+        {
+          "title": "Router setup and admin guard",
+          "lineRange": [
+            1,
+            25
+          ],
+          "explanation": "The router obtains all repositories from the shared `container` (aliased as `c`). The `admin` dependency builds on `require_roles(Role.ADMIN)` and additionally enforces the optional 'require admin 2FA' setting, raising an `UnauthorizedOperationError` with `code='2fa_required'` so the frontend can send the admin to the security page. Reusing this one dependency on every route keeps authorisation consistent.",
+          "tourOrder": 7
+        },
+        {
+          "title": "User and technician management",
+          "lineRange": [
+            29,
+            88
+          ],
+          "explanation": "Admins may create only admin or technician accounts (customers sign up themselves), and duplicate emails raise `AlreadyExistsError`. Creation and updates both go through `UserFactory`, so the same domain validation applies; `update_user` validates by building a throwaway domain object from the merged document. Password hashes are removed before responses, admins cannot deactivate themselves, and `reset-2fa` clears all authenticator fields with `$unset` and records a security event.",
+          "tourOrder": 7
+        },
+        {
+          "title": "IT services and categories",
+          "lineRange": [
+            92,
+            149
+          ],
+          "explanation": "Listings include an `incident_count` per item so the UI can show which entries are in use. Names must be unique. Renaming a service also updates the denormalised `service_name` on existing incidents with `update_many`. Deletion is refused with `ResourceInUseError` while incidents still reference the service or category, and deleting a service also removes its service-specific SLA policies.",
+          "tourOrder": 7
+        },
+        {
+          "title": "SLA policy management",
+          "lineRange": [
+            153,
+            194
+          ],
+          "explanation": "`_validate_policy` checks that the resolution target is not shorter than the response target, that a referenced service exists, and that only one policy exists per priority and service pair. Policies with `service_id` of `None` are the per-priority defaults: they cannot change priority or become service-specific, and they cannot be deleted, because `IncidentService.policy` relies on a default always being present.",
+          "tourOrder": 7
+        },
+        {
+          "title": "Strategy and automation settings",
+          "lineRange": [
+            198,
+            221
+          ],
+          "explanation": "This is the runtime switch for the Strategy pattern from Tour Step 7. `GET /settings` returns the current settings together with the factories' `describe()` output, so the UI lists available algorithms without hard-coding them. `PUT /settings` validates strategy names against the factory registries and escalation priorities against the `Priority` enum, and refuses to enable mandatory admin 2FA for an admin who has not set it up, which would otherwise lock them out.",
+          "tourOrder": 7
+        },
+        {
+          "title": "Audit log and SLA violations",
+          "lineRange": [
+            225,
+            251
+          ],
+          "explanation": "The audit endpoint builds a MongoDB filter from optional incident, action, actor and date parameters; free-text values are passed through `re.escape` before being used in regex filters. It reuses `IncidentService._parse_day` for date parsing through a local import, and the date range end is exclusive (one day later). The SLA violation register returns records written by `SlaViolationObserver`, newest first.",
+          "tourOrder": 7
+        }
+      ]
+    },
+    "backend/app/domain/events.py": {
+      "overview": "Defines the Observer pattern infrastructure: the event type enum, the immutable `IncidentEvent`, the `EventObserver` interface and the `EventBus` subject. IncidentService only publishes what happened; observers decide how to react (audit trail, notifications, SLA violation register). This is the foundation of Tour Step 8 and means new reactions can be added without changing the service.",
+      "sections": [
+        {
+          "title": "Module purpose and event types",
+          "lineRange": [
+            1,
+            36
+          ],
+          "explanation": "The docstring describes the decoupling: adding an SMS observer, for example, means one new class plus one `subscribe` call. `EventType` is a `str` enum covering every lifecycle moment, from creation, classification and SLA application through assignment, status changes, notes, SLA risk and breach, escalation and correlation. These values are also stored as the `action` field of audit records.",
+          "tourOrder": 8
+        },
+        {
+          "title": "IncidentEvent",
+          "lineRange": [
+            39,
+            48
+          ],
+          "explanation": "A frozen dataclass, so an event cannot be changed after publication. It carries a snapshot of the incident and actor as plain dicts rather than live domain objects, which keeps observers from mutating the aggregate and makes events easy to store. The timestamp is filled by `default_factory` at creation time, and `data` holds event-specific extras such as the SLA kind or resolution summary.",
+          "tourOrder": 8
+        },
+        {
+          "title": "Observer interface and EventBus",
+          "lineRange": [
+            51,
+            77
+          ],
+          "explanation": "`EventObserver` defines a single async `on_event` method. `EventBus.subscribe` can optionally restrict an observer to a set of event types (stored as a `frozenset`, or `None` for all events). `publish` calls the matching observers in order and catches every exception, logging it as a warning, so that a failing observer such as a broken email server can never break the user's request.",
+          "tourOrder": 8
+        }
+      ]
+    },
+    "backend/app/services/email.py": {
+      "overview": "A small synchronous helper that sends one plain-text email through the SMTP account configured in environment variables. It is the external dependency that `SmtpEmailAdapter` in notifications.py wraps, so the rest of the notification system never touches `smtplib` directly (Tour Step 8).",
+      "sections": [
+        {
+          "title": "SMTP send helper",
+          "lineRange": [
+            1,
+            23
+          ],
+          "explanation": "Configuration is read from `SMTP_*` environment variables at call time, and the sender address falls back to the username. Missing configuration raises a `RuntimeError`, which the SMTP channel catches and records as a failed email log entry. The message is built with `EmailMessage` and sent over STARTTLS with a 15-second timeout. Because `smtplib` is blocking, the adapter runs this function with `asyncio.to_thread` instead of calling it directly from async code.",
+          "tourOrder": 8
+        }
+      ]
+    },
+    "backend/app/services/notifications.py": {
+      "overview": "Implements notification delivery: a `Notification` value object, an Adapter around the blocking email helper, several delivery channels (in-app, simulated email log, real SMTP email) and a dispatcher that fans one notification out to many recipients over every channel that supports it. `NotificationObserver` from observers.py decides who should hear about an event, and this module handles how it is delivered (Tour Step 8).",
+      "sections": [
+        {
+          "title": "Overview and Notification value object",
+          "lineRange": [
+            1,
+            34
+          ],
+          "explanation": "The docstring shows the class layout and states the extension point: SMS or push notifications would be one more `NotificationChannel` subclass passed to the dispatcher. `Notification` is a frozen dataclass holding the in-app title and message, a `kind` used for channel filtering, the incident reference, and optional email-specific subject and body that override the defaults.",
+          "tourOrder": 8
+        },
+        {
+          "title": "EmailSender adapter",
+          "lineRange": [
+            37,
+            56
+          ],
+          "explanation": "`EmailSender` is the interface the app expects from any email provider: an async `send` and `is_configured`. `SmtpEmailAdapter` adapts the synchronous `send_email` function by running it in a worker thread with `asyncio.to_thread`, so a slow SMTP server does not block the event loop. Swapping to an HTTP email API would mean writing another adapter class.",
+          "tourOrder": 8
+        },
+        {
+          "title": "Channel interface, in-app and simulated email",
+          "lineRange": [
+            61,
+            102
+          ],
+          "explanation": "`NotificationChannel.supports` defaults to true, and channels override it to opt out. `InAppChannel` writes an unread document into `notifications`, which backs the bell icon. `wants_email` respects the user's email preference but always lets `security` notifications through. `SimulatedEmailChannel` records a 'queued' entry in `email_logs`, which provides a visible email trail even when no SMTP server is configured.",
+          "tourOrder": 8
+        },
+        {
+          "title": "SMTP email channel",
+          "lineRange": [
+            105,
+            131
+          ],
+          "explanation": "Real email is limited to a few event kinds by default (resolved, SLA breached, escalation, security) to avoid flooding inboxes. `supports` also requires an email address, the user's consent and a configured sender. Success and failure are both logged to `email_logs`; on failure the error is truncated to 500 characters and the log notes that the in-app notification was still delivered.",
+          "tourOrder": 8
+        },
+        {
+          "title": "NotificationDispatcher",
+          "lineRange": [
+            134,
+            153
+          ],
+          "explanation": "`notify` skips empty recipients, the `system` pseudo-user and anyone already notified, so passing overlapping lists (for example technician, reporter and all admins) never produces duplicates. Each channel send is wrapped in its own try/except, so one failing channel does not stop the others or other recipients.",
+          "tourOrder": 8
+        }
+      ]
+    },
+    "backend/app/services/observers.py": {
+      "overview": "Concrete observers subscribed to the EventBus. One writes every event to the audit trail, one records SLA breaches in a dedicated violation register, and one decides who should be notified about each event type and what they are told. Together they are the side-effect layer described in Tour Step 8, kept separate from IncidentService.",
+      "sections": [
+        {
+          "title": "AuditObserver",
+          "lineRange": [
+            1,
+            19
+          ],
+          "explanation": "Turns each `IncidentEvent` into an audit document that flattens incident and actor fields (number, actor name and role, previous and new state, extra data, timestamp). Because it receives every event, the audit log becomes the complete incident history shown on the detail page and searched by the admin audit endpoint.",
+          "tourOrder": 8
+        },
+        {
+          "title": "SlaViolationObserver",
+          "lineRange": [
+            22,
+            35
+          ],
+          "explanation": "Stores each SLA breach as a separate document including priority, service, assignee, which deadline was missed and when. The observer itself does not filter by type; the subscription in the composition root is expected to limit it to `SLA_BREACHED` events, which is why it can read `kind` and `due_at` from `e.data` directly.",
+          "tourOrder": 8
+        },
+        {
+          "title": "NotificationObserver recipient lookup",
+          "lineRange": [
+            38,
+            58
+          ],
+          "explanation": "Recipients are resolved lazily from the user repository. `_user` returns `None` for the system actor, missing users and inactive accounts, so deactivated users stop receiving notifications without extra checks. Each recipient dict includes the `email_notifications` preference that the email channels use.",
+          "tourOrder": 8
+        },
+        {
+          "title": "Event-to-notification rules",
+          "lineRange": [
+            60,
+            108
+          ],
+          "explanation": "`on_event` is a dispatch table written as an if/elif chain on the event type. A few short lambdas reduce repetition: `not_actor` avoids notifying people about their own actions, and `msg` builds a `Notification` with the incident reference. Rules are role-specific: reporters hear about creation, assignment, info requests and resolution (with a full email body), technicians about assignments and notes, and admins about new P1 incidents, SLA breaches and correlated outages. SLA-at-risk warnings go to the assignee or, if none, to the admins.",
+          "tourOrder": 8
+        }
+      ]
+    },
+    "backend/app/repositories.py": {
+      "overview": "Holds all MongoDB access behind the Repository pattern. A generic `MongoRepository` supplies CRUD for one collection, and subclasses add collection-specific queries for incidents, users, catalog items, SLA policies, audit logs, security events, notifications, violations, correlation alerts and settings. Services and observers talk only to these classes, which is the separation Tour Step 9 describes.",
+      "sections": [
+        {
+          "title": "Module purpose and ObjectId helper",
+          "lineRange": [
+            1,
+            22
+          ],
+          "explanation": "The docstring explains the goal: the database could be swapped by writing new repository classes without touching business logic. `to_object_id` converts strings to `ObjectId` and turns a malformed ID into `ResourceNotFoundError` instead of a 500 error, so a bad URL parameter produces a clean 404.",
+          "tourOrder": 9
+        },
+        {
+          "title": "Generic MongoRepository",
+          "lineRange": [
+            25,
+            66
+          ],
+          "explanation": "Subclasses set only `collection_name` and `entity_name`; the base class provides `get`, `find` (with optional sort, limit and projection), `count`, `add`, `update` and `delete`. Missing records raise `ResourceNotFoundError` with a message built from the entity name. `add` writes the generated `_id` back onto the passed dict, and `update` returns the fresh document after the `$set`.",
+          "tourOrder": 9
+        },
+        {
+          "title": "IncidentRepository",
+          "lineRange": [
+            69,
+            111
+          ],
+          "explanation": "`get` accepts either a Mongo ID or a human-readable number such as `INC-00012`. `next_number` uses an atomic `find_one_and_update` with `$inc` and `upsert` on a counters collection, so concurrent creations never receive the same number. `save_changes` is the persistence half of the aggregate's change tracking: it `$set`s only changed fields, `$push`es new notes with `$each` so existing notes are never overwritten, then calls `mark_saved`. `open_count_for` can exclude the current incident when checking capacity.",
+          "tourOrder": 9
+        },
+        {
+          "title": "UserRepository",
+          "lineRange": [
+            114,
+            132
+          ],
+          "explanation": "Emails are normalised to lowercase before lookup, matching how `User` stores them. `active_technicians` and `active_admins` support assignment and notifications. `list_public` uses a projection that excludes `PRIVATE_FIELDS` (password hash and TOTP secrets) at query level, so sensitive fields never reach the admin user list.",
+          "tourOrder": 9
+        },
+        {
+          "title": "Catalog and SLA policy repositories",
+          "lineRange": [
+            135,
+            161
+          ],
+          "explanation": "Services and categories add a `by_name` lookup used for uniqueness checks. `SlaPolicyRepository.find_for` implements the SLA resolution rule: a policy specific to the service and priority wins, otherwise the default policy for that priority (`service_id` of `None`) is used.",
+          "tourOrder": 9
+        },
+        {
+          "title": "Audit and security event repositories",
+          "lineRange": [
+            164,
+            195
+          ],
+          "explanation": "`AuditRepository.for_incident` returns an incident's history oldest first, already cleaned for the API. `SecurityEventRepository.record` captures sign-ins and account changes along with client IP and user agent; `_client` prefers the first `X-Forwarded-For` address (useful behind a proxy) and truncates the user agent to 300 characters.",
+          "tourOrder": 9
+        },
+        {
+          "title": "Simple collection repositories",
+          "lineRange": [
+            198,
+            210
+          ],
+          "explanation": "Notifications, SLA violations and correlation alerts need only the inherited CRUD operations, so each subclass just names its collection. This shows the benefit of the generic base: a new collection costs three lines.",
+          "tourOrder": 9
+        },
+        {
+          "title": "SettingsRepository",
+          "lineRange": [
+            213,
+            235
+          ],
+          "explanation": "System settings live in a single document with the fixed ID `system`. `get_settings` merges stored values over `DEFAULTS`, so a fresh database still works and newly added settings get sensible defaults without a migration. `update_settings` upserts with `$set` and returns the merged result. These are the values the admin settings endpoint edits and that IncidentService reads to choose strategies.",
+          "tourOrder": 9
+        }
+      ]
+    },
+    "backend/app/domain/campus.py": {
+      "overview": "Reference data and text-parsing rules specific to the BITS Pilani Hyderabad campus. It lists the hostels and academic blocks, and exposes two pure functions that read a location and a business-criticality level out of a free-text report. IntelligenceService.generate_incident_details (tour step 10) uses them to autofill the report form from the student's own words, so the location survives even if the AI shortened the description.",
+      "sections": [
+        {
+          "title": "Campus reference lists",
+          "lineRange": [
+            1,
+            9
+          ],
+          "explanation": "`HOSTELS` and `ACADEMIC_BLOCKS` are the canonical display names for campus places. The parsing functions below always return these exact strings, which is why the regexes map matches back onto formatted names such as `'NAB (New Academic Block)'` instead of returning the raw text the student typed.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Location and keyword regexes",
+          "lineRange": [
+            11,
+            30
+          ],
+          "explanation": "Every pattern is compiled once at import time. `_BLOCK_RX` is an ordered list of `(regex, formatter)` pairs, so each rule can build its own canonical name from the match (for example `Block D` from `d-block` or `blk d`). `_ROOM_RX` has two layers: a strict `LTC-101` / `D-204` style first, then a looser `room 12`, `lab 3` style. `CRITICAL_WORDS` and `IMPORTANT_WORDS` hold the vocabulary that `estimate_criticality` uses to score urgency.",
+          "tourOrder": 10
+        },
+        {
+          "title": "extract_location",
+          "lineRange": [
+            33,
+            55
+          ],
+          "explanation": "Lowercases the text and fills a fixed-shape dict. Hostels are checked before academic blocks, and the `else` branch means a report gets at most one location type. The first block rule that matches wins, so the order of `_BLOCK_RX` decides ties. The room number is extracted on its own, so a room can be found even when no hostel or block was named. Because the dict always has the same keys, callers can check `location['type']` without guarding for missing keys.",
+          "tourOrder": 10
+        },
+        {
+          "title": "estimate_criticality",
+          "lineRange": [
+            58,
+            65
+          ],
+          "explanation": "A three-level heuristic that matches the `business_criticality` scale used in the Gemini prompt: 3 for exams, payments and deadlines, 2 for coursework, 1 otherwise. Critical words are checked first, so a report that mentions both an exam and an assignment scores 3. The service only uses this value when the AI did not supply one.",
+          "tourOrder": 10
+        }
+      ]
+    },
+    "backend/app/domain/scope.py": {
+      "overview": "Decides whether a report belongs at the IT/facilities help desk. Medical emergencies, mental-health crises, fire, electrical danger, security incidents, pests and other non-IT matters are redirected to the right campus or national contacts instead of becoming tickets. Two layers make the decision: a deterministic keyword classifier and an optional AI opinion. They are merged with a safety-first rule, so the rules' life-safety verdict always wins. This file is the scope detection half of tour step 10.",
+      "sections": [
+        {
+          "title": "Design rationale docstring",
+          "lineRange": [
+            1,
+            24
+          ],
+          "explanation": "The module docstring sets out the policy: rules always run because the demo may have no AI access, the AI is consulted when configured, and a possible life-safety match from the rules overrides the AI. The stated trade-off is that a false alarm costs one click, while a missed emergency could cost much more. That asymmetry explains why the code below favours over-detection.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Contacts and ScopeKind",
+          "lineRange": [
+            27,
+            62
+          ],
+          "explanation": "`Contact` is a frozen dataclass, so the phone directory cannot be changed by accident at runtime. `ScopeKind` subclasses both `str` and `Enum`, which lets values serialise directly to JSON and compare equal to plain strings coming from the AI. The two sets `IN_SCOPE` and `LIFE_SAFETY` are what the rest of the module actually branches on. Security and pest are out of scope but not life-safety.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Guidance per kind",
+          "lineRange": [
+            64,
+            102
+          ],
+          "explanation": "A lookup table from each out-of-scope kind to the title, message and ordered contact list shown to the student. The `emergency` flag drives the urgent banner in the frontend's NewIncident form. The short aliases `C` and `N` keep the table readable. The mental-health entry puts the Tele-MANAS helpline first and uses supportive wording.",
+          "tourOrder": 10
+        },
+        {
+          "title": "ScopeAssessment result",
+          "lineRange": [
+            105,
+            127
+          ],
+          "explanation": "The value object returned by every classifier. The `for_kind` factory fills in guidance automatically for out-of-scope kinds, so callers never assemble titles or contacts by hand. In-scope results carry no guidance. `to_dict` converts the enum to its string value for the JSON API. `source` records whether the verdict came from 'rules', 'ai' or 'ai+rules'.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Text normalisation helpers",
+          "lineRange": [
+            130,
+            149
+          ],
+          "explanation": "`normalise` applies Unicode NFKC folding, lowercases, unifies curly apostrophes and collapses whitespace, so the regexes see one consistent form. `_deleet` reverses common obfuscation such as 'su1c1de' or spaced-out letters, and keeps Devanagari and Telugu characters. It is used only as a fallback for crisis terms. `W` and `E` are lookaround word boundaries, used instead of `\\b` so that matching stays predictable around apostrophes and non-ASCII text.",
+          "tourOrder": 10
+        },
+        {
+          "title": "IT idioms to strip",
+          "lineRange": [
+            152,
+            170
+          ],
+          "explanation": "Phrases that sound alarming but are everyday IT language ('kill the process', 'dead pixel', 'firewall', 'stolen password', 'python', 'killing me') are removed before any emergency rule runs. This is the main defence against false positives. For example, 'fire' in 'Fire TV' or 'theft' in 'stolen credentials' would otherwise trigger the fire or security guidance.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Rule tables and priority",
+          "lineRange": [
+            172,
+            228
+          ],
+          "explanation": "`RULES` maps each non-IT kind to its regex list, including Hindi and Telugu terms for self-harm. `IT_SIGNALS` detects IT or facilities vocabulary. It is used only to soften the low-stakes `OTHER` category, so 'my marks on the ERP portal' stays an IT ticket. `PRIORITY` orders the kinds from most to least severe, so when several kinds match, the most serious one is reported.",
+          "tourOrder": 10
+        },
+        {
+          "title": "RuleBasedScopeClassifier",
+          "lineRange": [
+            231,
+            254
+          ],
+          "explanation": "Normalises title and description together, strips IT idioms, then walks `PRIORITY`. For mental health it falls back to the de-leeted compact text. Life-safety kinds return immediately. Security and pest also return immediately, because cyber phrasing was already stripped. `OTHER` is returned only when no IT context is present. If nothing matches, the report is classified as IT. The classifier needs no I/O, so it can run on every keystroke.",
+          "tourOrder": 10
+        },
+        {
+          "title": "AI parsing and safety-first merge",
+          "lineRange": [
+            257,
+            276
+          ],
+          "explanation": "`parse_ai_kind` tolerates loose AI output by normalising the string, trying the enum, then an alias table. It returns `None` when the answer is unusable. `combine` encodes the safety rule. If the rules found a life-safety kind, that kind wins and the source is marked 'ai+rules' only when the AI agreed. If the AI gave no answer, the rules verdict stands. Otherwise the AI's kind is used, and the rule matches are kept only when both sides agree.",
+          "tourOrder": 10
+        }
+      ]
+    },
+    "backend/app/routers/intelligence.py": {
+      "overview": "A thin FastAPI router that exposes the IntelligenceService under `/api/intelligence`. Every endpoint authenticates the caller. Analysis that reveals other people's incidents (duplicates, recommendations, correlations) is restricted to administrators and technicians. All behaviour lives in the service obtained from the DI container, which matches the layering shown in tour step 10.",
+      "sections": [
+        {
+          "title": "Router setup",
+          "lineRange": [
+            1,
+            10
+          ],
+          "explanation": "The router takes its service from the module-level `container` (tour step 3) instead of building one, so it shares the same IntelligenceService and database handle as the rest of the app. `STAFF` is a tuple of role values that is unpacked into `require_roles(*STAFF)` below.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Classification endpoints",
+          "lineRange": [
+            13,
+            21
+          ],
+          "explanation": "`/classify` and `/generate-incident` are open to any authenticated user, students included, because they feed the report form. `/generate-incident` declares `response_model=AIGeneratedDetails`, so FastAPI validates the service's dict against the schema. That is why the service carefully pads titles and descriptions to their minimum lengths.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Staff-only analysis",
+          "lineRange": [
+            24,
+            41
+          ],
+          "explanation": "Duplicate search, technician recommendation and correlation clusters reveal other incidents, so they require the admin or technician role. `/recommend/{iid}` also calls `assert_access` on the incident service, adding an object-level check on top of the role check. `/correlations` reads its window and threshold from the admin-editable settings document, so administrators can tune them without redeploying.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Scope check and autofill",
+          "lineRange": [
+            44,
+            55
+          ],
+          "explanation": "`/scope` returns the `ScopeAssessment` as a dict. The frontend calls it with `use_ai=false` while the student types (instant, rules only) and with `use_ai=true` before submitting. `/suggest` is synchronous on the service side because it is pure keyword ranking with no database or network access.",
+          "tourOrder": 10
+        }
+      ]
+    },
+    "backend/app/services/intelligence.py": {
+      "overview": "The 'smart' layer of BITS reports. It contains concept-based duplicate detection, keyword rule tables for categories and services, a Gemini adapter that treats the model's reply as untrusted input, and the IntelligenceService facade. The facade combines these pieces with the scope rules, campus parsing and strategy-based technician ranking. Every AI path falls back to deterministic heuristics, so the app works without an API key. This is the core file of tour step 10.",
+      "sections": [
+        {
+          "title": "Imports and tokenising helpers",
+          "lineRange": [
+            1,
+            21
+          ],
+          "explanation": "`tokens` produces lowercase alphanumeric words longer than two characters, minus a stop list. It is used for similarity in resolution suggestions and incident correlation. `keyword_count` matches whole words with optional plural endings, using explicit lookarounds. As its docstring explains, this stops 'ui' matching 'building' or 'fire' matching 'firewall'.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Concept normalisation for duplicates",
+          "lineRange": [
+            23,
+            98
+          ],
+          "explanation": "Before comparing reports, `concepts` rewrites negated phrases such as \"can't connect\" into a single FAILURE marker, stems simple suffixes with `_stem`, and maps synonyms onto shared concepts (pay, UPI and transaction all become 'payment'). `CONCEPT_WEIGHTS` gives FAILURE only 0.3, because nearly every report says something is broken. `jaccard` and `dice` are weighted set-similarity measures built on `_weight`.",
+          "tourOrder": 10
+        },
+        {
+          "title": "DuplicateDetector",
+          "lineRange": [
+            100,
+            132
+          ],
+          "explanation": "Scores a candidate as 0.75 times the better of title-to-title Dice and whole-report Jaccard, plus 0.25 when both reports name the same service. Dice is used for titles because short titles carry the most signal. Candidates at or above `THRESHOLD = 0.45` are returned sorted by score, capped at `limit`. The detector is pure: database access happens in `find_duplicates`.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Keyword rule tables",
+          "lineRange": [
+            134,
+            183
+          ],
+          "explanation": "`RULES` covers the online IT categories, `OFFLINE_RULES` covers room-repair categories (electrician, carpenter, technician), and `SERVICE_RULES` maps text to catalogue services. `STRONG_KEYWORDS` weights distinctive words such as 'phishing' or 'vpn' above generic ones. `GEMINI_STATUS_HINTS` turns HTTP status codes into concrete fix-it messages for the logs.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Classifier interface and Gemini prompt",
+          "lineRange": [
+            185,
+            248
+          ],
+          "explanation": "`IncidentClassifier` is the abstraction, and `GeminiAdapter` applies the Adapter pattern to Google's REST API. The model name is checked against a strict regex because it is placed in the URL. `from_env` returns `None` when no key is set, which is the signal to use heuristics. The `transport` argument lets tests inject an `httpx.MockTransport`. The prompt wraps the report in `<report>` tags and tells the model to treat it as data, which is a prompt-injection defence. `_clean_input` strips control characters and caps the length.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Reply validation and API call",
+          "lineRange": [
+            250,
+            362
+          ],
+          "explanation": "The validators `_int`, `_text` and `_extract_json` never trust the model. They clamp numbers, map words like 'high' to 3, reject nested objects, strip markdown fences and fall back to the outermost `{...}`. `_normalise` keeps a category only if it matches an allowed one, case-insensitively. `classify` sends the API key in a header rather than the URL so it cannot leak into logs, and retries once on 5xx responses. Every failure path logs a specific reason and returns `None`, so the caller falls back to keyword classification.",
+          "tourOrder": 10
+        },
+        {
+          "title": "IntelligenceService: suggest, scope, classify",
+          "lineRange": [
+            365,
+            423
+          ],
+          "explanation": "The `classifier_factory` dependency is called on each use, so a key added to the environment takes effect without a restart, and tests can substitute fakes. `suggest` ranks only the category and service names the form currently allows. `assess_scope` always runs the rules and skips the AI entirely when the rules detect a life-safety case, so an emergency response never waits on the network. `classify` keeps Gemini's fields but fills in the category from keywords when Gemini named one that does not exist.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Heuristic classification fallback",
+          "lineRange": [
+            425,
+            466
+          ],
+          "explanation": "Picks the category with the most keyword hits, then puts the report into one of three severity bands (campus-critical, moderate or individual) based on outage and scale words. Each band sets impact, urgency, score, affected users and canned root-cause and action text. The result has the same shape as Gemini's normalised output, with `source: 'heuristic'`, so callers handle both the same way.",
+          "tourOrder": 10
+        },
+        {
+          "title": "generate_incident_details",
+          "lineRange": [
+            468,
+            532
+          ],
+          "explanation": "Produces editable form suggestions and never creates an incident. Scope is checked first, reusing Gemini's scope answer when available. Out-of-scope reports come back with the student's words untouched plus guidance. For in-scope reports it derives priority from the impact and urgency pair, raises urgency in keyword mode for failure words or high criticality, extracts the location from the original text, and lists missing information with clarifying questions. The minimum-length fallbacks exist because the `AIGeneratedDetails` response model would otherwise return a 500 error. `_short_title` builds a title from the first clause when there is no AI.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Duplicates, recommendations, correlation",
+          "lineRange": [
+            534,
+            665
+          ],
+          "explanation": "`find_duplicates` loads open and resolved incidents and runs the detector. `profiles` builds a `TechnicianProfile` for each active technician from incident history (open load, resolutions in the same category or service, average resolution time). `recommend` ranks them with `SmartRecommendationStrategy` from tour step 7. `suggest_resolutions` and `related_incidents` use plain token Jaccard. `correlation_clusters` groups recent open incidents by service and flags any group at or above the threshold as a likely shared root cause.",
+          "tourOrder": 10
+        }
+      ]
+    },
+    "backend/app/domain/sla.py": {
+      "overview": "Pure SLA domain helpers with no I/O. The module builds an SLA record from a policy when an incident is created, defines the at-risk window as the last 25% of the resolution time, and evaluates an SLA dict as ON_TRACK, AT_RISK, BREACHED or MET at a given moment. The background SlaMonitor and the Incident model both depend on these functions (tour step 11).",
+      "sections": [
+        {
+          "title": "Time helpers",
+          "lineRange": [
+            1,
+            16
+          ],
+          "explanation": "`utcnow` always returns an aware UTC datetime. `parse_dt` accepts datetimes, ISO strings (including a trailing 'Z') or empty values, and makes the result timezone-aware. Mongo documents store timestamps as ISO strings, so this normalisation is what makes the comparisons later in the file safe. On bad input it returns `None` instead of raising.",
+          "tourOrder": 11
+        },
+        {
+          "title": "build_sla",
+          "lineRange": [
+            18,
+            31
+          ],
+          "explanation": "Copies the policy's response and resolution minutes into the incident, with defaults of 60 and 480, and computes absolute due timestamps from the creation time. Storing a snapshot means that later edits to a policy do not change deadlines already promised on existing incidents. New SLAs start as ON_TRACK.",
+          "tourOrder": 11
+        },
+        {
+          "title": "At-risk window",
+          "lineRange": [
+            33,
+            38
+          ],
+          "explanation": "`AT_RISK_FRACTION = 0.25` means the warning starts when a quarter of the resolution window remains. The window scales with priority: the docstring's examples are 7.5 minutes for a 30-minute P1 and 6 hours for a 24-hour P4. Keeping it proportional avoids early alarms on long SLAs and very late ones on short SLAs.",
+          "tourOrder": 11
+        },
+        {
+          "title": "evaluate_sla",
+          "lineRange": [
+            40,
+            60
+          ],
+          "explanation": "Returns a new dict (it never mutates the input) with two breach flags and a status. A deadline counts as breached if it was met late, or if it is still unmet and has passed. Resolved incidents become MET only if neither deadline was breached. Open incidents are BREACHED, then AT_RISK inside the window, otherwise ON_TRACK. The optional `now` parameter makes the function easy to test deterministically.",
+          "tourOrder": 11
+        }
+      ]
+    },
+    "backend/app/services/sla_monitor.py": {
+      "overview": "The background SLA loop that server.py starts at startup (tour step 2). The docstring says it runs every 60 seconds. On each pass it re-evaluates every open incident's SLA, publishes at-risk events, records breaches, and escalates unacknowledged high-priority incidents through three levels, from Team Lead to IT Manager. It reports changes as events on the EventBus (tour step 8), so notifications and the audit trail are handled by observers. This file is the operational half of tour step 11.",
+      "sections": [
+        {
+          "title": "Escalation matrix docstring",
+          "lineRange": [
+            1,
+            22
+          ],
+          "explanation": "The docstring is the specification. Level 1 is triggered at 50% of the response window, level 2 at 100% (response SLA missed, with auto-dispatch), and level 3 at 200%. Each level has its own audience. The imports show the dependencies: domain enums, events, the Incident aggregate, the SYSTEM actor and the SLA time helpers.",
+          "tourOrder": 11
+        },
+        {
+          "title": "EscalationLevel and EscalationPolicy",
+          "lineRange": [
+            25,
+            56
+          ],
+          "explanation": "`EscalationLevel` is an immutable value object, and `LEVELS` is the ordered escalation ladder. `due_level` applies only to configured priorities, only while the incident is unacknowledged, and only in the NEW, CLASSIFIED or ASSIGNED states. It returns the highest level that is due and above the current one, so a monitor that was offline for a while jumps straight to the right level instead of sending several escalations at once.",
+          "tourOrder": 11
+        },
+        {
+          "title": "SlaMonitor wiring and recipients",
+          "lineRange": [
+            59,
+            75
+          ],
+          "explanation": "The monitor receives its repositories, the event bus and the IncidentService through its constructor, so it can be tested with fakes. `_publish` wraps the IncidentEvent boilerplate and attributes the event to the SYSTEM actor. `_recipients` chooses technicians skilled in the incident's category for 'team' levels, falling back to all technicians if none match, and administrators otherwise.",
+          "tourOrder": 11
+        },
+        {
+          "title": "run_once: the monitoring pass",
+          "lineRange": [
+            77,
+            113
+          ],
+          "explanation": "For each open incident with an SLA, `refresh_sla` returns the old and new status. An AT_RISK event is published only on the transition into that status, which prevents repeated warnings. Escalation can be switched off in settings. Note that the policy priorities come from `settings.get('escalation_priorities') or []`, so with no setting the empty list means no incident escalates. Changes are saved only when `incident.changes()` reports any, and breaches are recorded through the service. At level 2 or above, an unassigned CLASSIFIED incident is auto-assigned. An assignment failure is logged rather than raised, so one bad incident cannot stop the loop.",
+          "tourOrder": 11
+        }
+      ]
+    },
+    "frontend/src/App.js": {
+      "overview": "The React application's main module, at nearly 2,000 lines. It holds the `useAuth` session hook, the top-level router, the login screen (password, 2FA, password reset and Google sign-in), the role-aware `Shell` with sidebar navigation and nested routes, and several pages defined inline: the incident list, the AI-assisted NewIncident form, user administration, notifications and docs. Tour step 12 covers the auth, routing and shell parts. The NewIncident form is where the frontend uses the intelligence endpoints from tour step 10.",
+      "sections": [
+        {
+          "title": "Imports and helpers",
+          "lineRange": [
+            1,
+            37
+          ],
+          "explanation": "Pulls in React Router, lucide icons, the `sonner` toasts, the shared axios client and the ErrorBoundary, plus page components from `./pages` and campus data from `./components`. `BITS_DOMAIN` restricts self-registration to campus email addresses. `extractStudentId` takes a 6 to 10 digit ID from the email prefix, or strips leading letters as a fallback. It is used both for the live ID preview on login and to prefill the report form.",
+          "tourOrder": 12
+        },
+        {
+          "title": "useAuth session hook",
+          "lineRange": [
+            39,
+            123
+          ],
+          "explanation": "Keeps the current user in state, initialised from localStorage, and re-fetches `/auth/me` on mount so role or activation changes made by an admin take effect on reload. `saveSession` is the only place that writes both the token and the user. `login` returns `{ mfaRequired, mfaToken }` instead of a user when the account uses an authenticator app, and `verifyTwoFactor` completes that second step. `logout` makes a best-effort call to the server, then always clears local state.",
+          "tourOrder": 12
+        },
+        {
+          "title": "App and top-level routes",
+          "lineRange": [
+            125,
+            136
+          ],
+          "explanation": "The root component creates `auth` once and passes it down as a prop instead of using a context. There are two routes: `/login` always shows the login screen, and every other path shows `Shell` if signed in or `Login` otherwise. This acts as a simple global auth guard.",
+          "tourOrder": 12
+        },
+        {
+          "title": "Login state and handlers",
+          "lineRange": [
+            138,
+            304
+          ],
+          "explanation": "One `mode` state switches between login, register, mfa, reset-request and reset-confirm, so a single component handles all sign-in flows. Every handler follows the same pattern: set busy, call the auth method, toast the result, navigate by role, clear busy. A 401 during 2FA sends the user back to the login step because the mfa token has expired. Google sign-in uses a full-page redirect. A `useRef` guard makes sure the reply in the URL fragment is consumed only once, and a `pageshow` listener re-enables the button when mobile browsers restore the page from cache.",
+          "tourOrder": 12
+        },
+        {
+          "title": "Shell layout and nested routes",
+          "lineRange": [
+            528,
+            703
+          ],
+          "explanation": "Works out the role flags, polls `/notifications` every 30 seconds and on every navigation for the bell count, and stores the dark-mode preference in localStorage. The sidebar links are filtered by role. A banner reminds administrators to set up 2FA. The nested `Routes` are wrapped in an `ErrorBoundary` keyed on the pathname, so a crash in one page leaves the sidebar usable and is cleared by navigating away. `AdminOnly` redirects non-admins in the client. The backend enforces the real authorisation.",
+          "tourOrder": 12
+        },
+        {
+          "title": "Incidents list",
+          "lineRange": [
+            705,
+            844
+          ],
+          "explanation": "Loads `/incidents` whenever the filters change. Search text is debounced by 250 ms, and a `cancelled` flag ignores responses from requests that have been superseded. Empty and false filters are dropped from the query. Technicians get an extra `scope` toggle (all, assigned or unassigned). Students see shortcut cards that link to `/incidents/new?type=...` presets. Each row shows location, priority, status, SLA badge and escalation level.",
+          "tourOrder": 12
+        },
+        {
+          "title": "NewIncident: state and live checks",
+          "lineRange": [
+            846,
+            1031
+          ],
+          "explanation": "The form state `f` covers location mode (hostel, academics or online), category, service, impact and urgency, and the confirmation flags. The catalogue loads once and defaults to a carpentry repair. Two debounced effects run while the student types. The first calls `/intelligence/suggest` (350 ms) and auto-picks a category and service unless the student has already chosen one, which is tracked in the `touched` ref. The second calls `/intelligence/scope` with `use_ai: false` (400 ms) to show an emergency banner immediately.",
+          "tourOrder": 10
+        },
+        {
+          "title": "AI generation and submission",
+          "lineRange": [
+            1033,
+            1158
+          ],
+          "explanation": "`applyGenerated` maps the server's generated details onto the form, choosing a consistent location mode, category and service, then marks those fields as touched so later typing does not override them. `generateDetails` stops and shows the non-IT notice when the scope is out of bounds instead of filling in a ticket. `sendReport` checks scope again before submitting, using a per-text cache, and resolves the service actually submitted with `effectiveServiceId`. It then handles two server replies: an `OutOfScopeError` reopens the notice, and a 409 duplicate shows a warning with an acknowledgement checkbox.",
+          "tourOrder": 10
+        },
+        {
+          "title": "NewIncident form markup",
+          "lineRange": [
+            1160,
+            1490
+          ],
+          "explanation": "Renders the 'Generate Details with AI' button, the `NonItNotice` modal and the live `EmergencyBanner`, an AI triage summary card, the duplicate warning, and the form itself. The form includes one-click issue types from `ISSUE_TYPES`, the offline or online assistance choice, location pickers, contact details and the duplicate acknowledgement checkbox. Most logic lives in the handlers above, so this section is mainly declarative JSX."
+        },
+        {
+          "title": "Users, notifications and docs pages",
+          "lineRange": [
+            1492,
+            1977
+          ],
+          "explanation": "`UsersPage` is the admin console. It lists accounts with role filters, creates admin and technician accounts (technicians with skills), toggles activation and resets a user's 2FA, all through `/admin/users`. `Notifications` loads the inbox, marks items read, and passes the unread count back to the Shell bell through `onChange`. `DOC_SECTIONS` and `Docs` render a static guide that summarises the lifecycle, roles, priority, assignment strategies, SLA escalation and intelligent features."
+        }
+      ]
+    },
+    "frontend/src/api.js": {
+      "overview": "The single axios client used by every page. It chooses the backend base URL, adds the JWT to every request, logs failed calls with the backend request ID, signs the user out on an expired token, and exports `errMsg` to turn FastAPI error payloads into readable text. It is the frontend half of the request path in tour step 12.",
+      "sections": [
+        {
+          "title": "Backend base URL resolution",
+          "lineRange": [
+            1,
+            12
+          ],
+          "explanation": "Uses `REACT_APP_BACKEND_URL` directly, except when it points at localhost and the page was opened from another device such as a phone on the same Wi-Fi or a tunnel. In that case 'localhost' would mean the phone itself, so the base becomes relative and the dev server forwards `/api` through setupProxy.js. `API` is exported so non-axios code such as errorReporting.js can use the same base URL.",
+          "tourOrder": 12
+        },
+        {
+          "title": "Client and auth interceptor",
+          "lineRange": [
+            14,
+            20
+          ],
+          "explanation": "A request interceptor reads `itsm_token` from localStorage on every call and sets the `Authorization: Bearer` header. Reading the token per request means a login or logout takes effect immediately, with no need to rebuild the client.",
+          "tourOrder": 12
+        },
+        {
+          "title": "Failure logging and 401 handling",
+          "lineRange": [
+            22,
+            60
+          ],
+          "explanation": "`logApiFailure` writes a collapsed console group with the method, URL, status, message and request ID, and points developers to the matching entry in `backend/logs/errors.log`. The response interceptor then handles expired or revoked tokens: on a 401 from anything other than a sign-in endpoint, it clears the session and does a hard redirect to `/login` instead of leaving the app half signed in. The error is still rejected, so callers can show their own toast.",
+          "tourOrder": 12
+        },
+        {
+          "title": "errMsg",
+          "lineRange": [
+            62,
+            88
+          ],
+          "explanation": "FastAPI returns `detail` as a string for business errors but as a list of objects for 422 validation errors. Rendering a list in a toast would crash React. `errMsg` handles network failures, string details (adding the request ID as a reference on 5xx), and validation lists (joining 'field: message' pairs with the `body` prefix removed).",
+          "tourOrder": 12
+        }
+      ]
+    },
+    "frontend/src/errorReporting.js": {
+      "overview": "Browser-side error reporting. It sends uncaught errors, unhandled promise rejections and React render crashes to the backend's `POST /api/client-errors` endpoint, so they appear in the server's error log. It also provides an ErrorBoundary that shows a friendly recovery screen with a reference code instead of a blank page. index.js and App.js use the boundary at two levels (tour step 12).",
+      "sections": [
+        {
+          "title": "Rate limiting state",
+          "lineRange": [
+            1,
+            16
+          ],
+          "explanation": "Caps reports at 20 per page load and keeps a `recent` map of message to timestamp, so a render loop cannot flood the backend. `makeReference` creates a short `ui-xxxxxx` code that users can quote to an administrator. `clip` truncates fields to bounded sizes before they are sent.",
+          "tourOrder": 12
+        },
+        {
+          "title": "reportClientError",
+          "lineRange": [
+            18,
+            43
+          ],
+          "explanation": "Drops a report if the per-page cap is reached or the same message was sent in the last 30 seconds. It uses `fetch` with `keepalive: true`, so the request can finish even if the page is being unloaded, and attaches the token when one exists. The whole function is wrapped in try/catch and the fetch promise's rejection is swallowed, because, as the comment says, error reporting must never cause another error.",
+          "tourOrder": 12
+        },
+        {
+          "title": "Global error handlers",
+          "lineRange": [
+            45,
+            64
+          ],
+          "explanation": "Subscribes to `window` 'error' and 'unhandledrejection' events. Known noise is ignored: ResizeObserver loop warnings and opaque cross-origin 'Script error' messages. For rejected axios calls, the backend `request_id` is passed along, so the client and server log entries can be linked.",
+          "tourOrder": 12
+        },
+        {
+          "title": "ErrorBoundary component",
+          "lineRange": [
+            66,
+            122
+          ],
+          "explanation": "A class component, because React only supports error boundaries through `getDerivedStateFromError` and `componentDidCatch`. The first assigns a reference code, and the second logs to the console and reports the crash with the component stack. `componentDidUpdate` clears the error when `resetKey` changes, which is how Shell's pathname key resets it on navigation. The fallback UI offers Try again, Reload and Go to my reports, and the `fullPage` prop centres it for the outermost boundary.",
+          "tourOrder": 12
+        }
+      ]
+    },
+    "frontend/src/index.js": {
+      "overview": "The browser entry point. It installs the global error handlers before anything renders, then mounts `App` inside a full-page ErrorBoundary with React 18's `createRoot`. This is the first frontend file in tour step 12.",
+      "sections": [
+        {
+          "title": "Imports",
+          "lineRange": [
+            1,
+            5
+          ],
+          "explanation": "Imports React, the React 18 `createRoot` API, global CSS, the App component, and the error-reporting utilities.",
+          "tourOrder": 12
+        },
+        {
+          "title": "Bootstrap",
+          "lineRange": [
+            7,
+            13
+          ],
+          "explanation": "`installGlobalErrorHandlers()` runs first, so errors raised while the app initialises are still reported. The outer `ErrorBoundary fullPage` is the last line of defence. App.js adds an inner, per-route boundary, so most crashes are caught there and the sidebar stays visible.",
+          "tourOrder": 12
+        }
+      ]
+    },
+    "frontend/src/setupProxy.js": {
+      "overview": "Development-only proxy configuration that Create React App's dev server loads automatically. It forwards `/api` requests to the FastAPI backend, so the app works when opened from another device or through a tunnel. It pairs with the base-URL logic in api.js (tour step 12).",
+      "sections": [
+        {
+          "title": "Dev-server /api proxy",
+          "lineRange": [
+            1,
+            16
+          ],
+          "explanation": "Uses `http-proxy-middleware`, which ships with react-scripts, to forward `/api` to `BACKEND_PROXY_TARGET` (default `http://localhost:8000`). `changeOrigin` rewrites the Host header for the backend. Because requests are same-origin from the browser's point of view, no CORS changes are needed and the backend port is not exposed. api.js switches to relative URLs in exactly the case where this proxy is needed.",
+          "tourOrder": 12
+        }
+      ]
+    },
+    "frontend/src/components/common.js": {
+      "overview": "Small shared presentation helpers used across the role-based pages (tour step 13): date and duration formatting, role and status labels, the Badge, Loading, Empty and Modal components, and the canonical lists of priorities, statuses and SLA statuses used by filters and badges.",
+      "sections": [
+        {
+          "title": "Formatting helpers",
+          "lineRange": [
+            1,
+            25
+          ],
+          "explanation": "`fmt` and `fmtShort` format timestamps in the user's locale. `roleLabel` maps internal role names to display text; in particular, the `customer` role is shown as STUDENT. `statusLabel` turns `IN_PROGRESS` into 'In progress'. `minutesLabel` picks minutes, hours or days, and `timeLeft` describes an SLA deadline as 'left' or 'overdue', which the incident pages use to show countdowns.",
+          "tourOrder": 13
+        },
+        {
+          "title": "Shared UI components",
+          "lineRange": [
+            27,
+            57
+          ],
+          "explanation": "`Badge` turns any value into a CSS class (`P1`, `AT_RISK` becomes `at-risk`), so priority, status and SLA badges are all styled from the stylesheet. `Modal` closes on Escape through a keydown listener that is cleaned up on unmount, and closes on backdrop click. `stopPropagation` on the content keeps clicks inside the dialog from closing it. The `wide` prop widens the dialog for larger forms.",
+          "tourOrder": 13
+        },
+        {
+          "title": "Enumeration constants",
+          "lineRange": [
+            59,
+            61
+          ],
+          "explanation": "The frontend copies of the backend's priority, incident status and SLA status values. They must stay in sync with the backend enums (tour step 6). `STATUSES` lists the lifecycle in order, from NEW to CLOSED.",
+          "tourOrder": 13
+        }
+      ]
+    },
+    "frontend/src/pages/AdminConfig.js": {
+      "overview": "Administrator configuration screen, split into four tabs: strategies and automation, IT services, categories and SLA policies. It is the UI counterpart of the backend admin router from tour Step 7, letting an admin pick the assignment and priority strategies by name, tune escalation and correlation, and maintain the catalogue and SLA policies that the IncidentService relies on. Each tab is a self-contained function component that loads its own data through the shared axios client and reports outcomes with toast messages.",
+      "sections": [
+        {
+          "title": "Imports and tab definitions",
+          "lineRange": [
+            1,
+            12
+          ],
+          "explanation": "Imports React hooks, the `sonner` toast helper, lucide icons, the shared `api` client with its `errMsg` helper, and shared UI pieces (`Loading`, `Empty`, `Modal`, `minutesLabel`, `PRIORITIES`) from `components/common`. `TABS` is an array of `[key, label]` pairs, so the tab bar and the conditional rendering below are both driven from one list.",
+          "tourOrder": 13
+        },
+        {
+          "title": "Tabbed page shell",
+          "lineRange": [
+            14,
+            34
+          ],
+          "explanation": "`AdminConfig` keeps the selected tab in state, initialised lazily from `localStorage` so an admin returns to the tab they last used. Both the read and the write are wrapped in `try/catch` because `localStorage` can throw (for example in private browsing), and the page should still work then. The tab buttons carry `role=\"tab\"` and `aria-selected` for accessibility, and exactly one child panel is rendered with short-circuit `&&` checks.",
+          "tourOrder": 13
+        },
+        {
+          "title": "Strategy settings state and save",
+          "lineRange": [
+            36,
+            63
+          ],
+          "explanation": "`StrategySettings` fetches `/admin/settings` once and keeps two copies: `data` (the server reply, including the lists of available strategies) and `form` (the editable settings). The `set` helper uses a functional state update so rapid changes never overwrite each other, and `togglePriority` adds or removes a priority from `escalation_priorities` while keeping the list sorted. `save` PUTs the whole form and replaces both copies with the server's answer, so whatever validation the backend applied is reflected immediately.",
+          "tourOrder": 13
+        },
+        {
+          "title": "Assignment and priority pickers",
+          "lineRange": [
+            65,
+            97
+          ],
+          "explanation": "The two radio lists are rendered from `data.assignment_strategies` and `data.priority_strategies`, which come from the backend factories rather than being hard-coded. That is the Strategy pattern from Step 7 surfacing in the UI: adding a new strategy class to the backend registry makes it appear here with its name and description, with no frontend change. A checkbox toggles `auto_assign_on_create`, which makes the service run the selected assignment strategy as soon as an incident is reported.",
+          "tourOrder": 13
+        },
+        {
+          "title": "Escalation, correlation and 2FA",
+          "lineRange": [
+            99,
+            151
+          ],
+          "explanation": "These panels edit the automation settings consumed by the SLA monitor and correlation detection: whether escalation is enabled and for which priorities, and how many reports within how many minutes count as a possible major incident. The ordered list documents the three escalation levels (Team Lead at 50% of response time, System Administrator on breach with auto-dispatch, IT Manager at 200%) so admins understand what they are switching on. A final panel toggles `require_admin_2fa`, and a sticky Save button disables itself while a save is in flight.",
+          "tourOrder": 13
+        },
+        {
+          "title": "IT services list",
+          "lineRange": [
+            153,
+            211
+          ],
+          "explanation": "`CRIT` maps the 1-3 criticality scale to labels; the panel text notes that criticality feeds the priority calculation. `Services` loads rows through a memoised `load` callback (via `useCallback`) so it can be reused after every save or delete. `save` chooses PUT or POST depending on whether the form has an `id`, and the delete button is disabled when `incident_count > 0`, mirroring the backend rule that in-use services cannot be removed (it returns 409).",
+          "tourOrder": 13
+        },
+        {
+          "title": "Service form",
+          "lineRange": [
+            213,
+            230
+          ],
+          "explanation": "`ServiceForm` copies the initial values into local state so edits stay private until the user submits. On submit it prevents the default page reload and trims the name before handing it to `onSave`. HTML validation attributes (`required`, `minLength`, `maxLength`) give quick feedback in the browser, while the backend still performs the real validation."
+        },
+        {
+          "title": "Categories tab",
+          "lineRange": [
+            232,
+            271
+          ],
+          "explanation": "`Categories` uses a small inline form to add a category by name and shows every category as a chip with its incident count. As with services, the delete button is disabled when the category is in use, and a `window.confirm` dialog guards deletion. After any change it calls `load()` again instead of patching local state, keeping the UI consistent with the server at the cost of one extra request."
+        },
+        {
+          "title": "SLA policies list and save",
+          "lineRange": [
+            273,
+            328
+          ],
+          "explanation": "`SlaPolicies` loads policies plus the service catalogue (for the service dropdown). `save` builds a clean request body, converting the minute fields to numbers with unary `+` and turning an empty service into `null`. The rows are sorted by priority and then put default (service-less) policies before service-specific ones. Default policies cannot be deleted, so their delete button is disabled with an explanatory tooltip; the feature tests check the matching 409 response on the backend."
+        },
+        {
+          "title": "SLA policy editor modal",
+          "lineRange": [
+            329,
+            360
+          ],
+          "explanation": "The modal edits whichever policy is in `editing`. For an existing default policy (`id` set but no `service_id`) the priority and service dropdowns are disabled, so only the timings of defaults can change. New policies must pick a service, enforced by a disabled placeholder option and by disabling the Save button until a service is chosen. The resolution input's `min` follows the response time, a client-side hint for the backend rule that resolution cannot be shorter than response."
+        }
+      ]
+    },
+    "frontend/src/pages/Dashboard.js": {
+      "overview": "Operational dashboard for technicians and admins. It reads a single aggregate payload from the backend's `/reports/overview` endpoint and turns it into metric tiles, a possible-major-incident callout, severity, service and category bar charts, a technician workload table and recent SLA violations. It refreshes itself every 30 seconds and links into the incident queue and individual incidents, making it the at-a-glance view of the SLA and correlation features described in tour Step 13.",
+      "sections": [
+        {
+          "title": "Imports",
+          "lineRange": [
+            1,
+            5
+          ],
+          "explanation": "Pulls in React hooks, `Link` for in-app navigation, a set of lucide icons for the metric tiles, the shared `api` client and `errMsg`, and the shared `Badge`, `Loading`, `minutesLabel` and `fmtShort` helpers from `components/common`.",
+          "tourOrder": 13
+        },
+        {
+          "title": "Polling data load",
+          "lineRange": [
+            7,
+            24
+          ],
+          "explanation": "The effect defines `load`, calls it once, then repeats it every 30 seconds with `setInterval`; the cleanup function clears the timer when the page unmounts, which avoids leaks and state updates on an unmounted component. Errors are turned into a readable message with `errMsg`. Before rendering, the component computes maximum values for each chart (with `Math.max(1, ...)` so an empty dataset never divides by zero) to scale the bar widths.",
+          "tourOrder": 13
+        },
+        {
+          "title": "Metric tiles",
+          "lineRange": [
+            26,
+            39
+          ],
+          "explanation": "Two rows of `Metric` tiles show totals (all, open, P1 open, resolved) and SLA health (open breaches, compliance rate, escalated incidents, average resolution time). Each tile can carry a `sub` line with secondary detail such as how many incidents are at risk or how many were resolved today. All values come straight from `d.totals` and `d.sla`, so the backend owns the arithmetic.",
+          "tourOrder": 13
+        },
+        {
+          "title": "Possible major incidents",
+          "lineRange": [
+            41,
+            51
+          ],
+          "explanation": "When the backend reports correlations (several open reports on one service), a callout lists each service with its count, a suggestion and up to five incident links. Optional chaining (`d.correlations?.length`) keeps the page safe if the field is missing. This is where the correlation detection from the IncidentService becomes visible to staff."
+        },
+        {
+          "title": "Severity breakdown",
+          "lineRange": [
+            53,
+            67
+          ],
+          "explanation": "Renders one item per priority with a horizontal track whose width is the count relative to the busiest priority. The CSS class is derived from the priority name (`severity-p1` and so on) so styling, not logic, decides the colours. A small detail: the label switches between 'incident' and 'incidents' based on the count."
+        },
+        {
+          "title": "Service and category bars",
+          "lineRange": [
+            69,
+            98
+          ],
+          "explanation": "Two side-by-side panels draw simple CSS bar charts using inline `width` percentages rather than a charting library. The service list also shows how many incidents are open and, when present, how many breached their SLA. The category panel uses the same `bar-row` structure with an empty `<small />` so both lists line up in the grid."
+        },
+        {
+          "title": "Workload and SLA violations",
+          "lineRange": [
+            100,
+            140
+          ],
+          "explanation": "The workload table lists active technicians with an open/capacity bar capped at 100% and marked `full` when they reach `max_concurrent`; the signed-in user's row is highlighted with '(you)'. The violations panel lists recent missed response or resolution deadlines with links to the incident and a priority badge. Finally it shows which assignment and priority strategies are active and, only for admins, a link to change them in AdminConfig.",
+          "tourOrder": 13
+        },
+        {
+          "title": "Metric tile component",
+          "lineRange": [
+            142,
+            151
+          ],
+          "explanation": "`Metric` is a tiny presentational component: an icon, a label, a large value and an optional secondary line. Keeping it local to this file (not exported) signals that it is only used by the dashboard."
+        }
+      ]
+    },
+    "frontend/src/pages/IncidentDetail.js": {
+      "overview": "The single-incident page and the richest screen in the frontend. It loads `/incidents/:id`, which returns the incident together with the role-specific `allowed_transitions`, the audit trail, related incidents, suggested resolutions and technician recommendations, and renders them as panels. Action buttons are generated from `allowed_transitions`, so the State pattern on the backend (tour Step 6) decides what each role may do; this page only labels the moves and collects extra data for resolve, close and edit.",
+      "sections": [
+        {
+          "title": "Imports",
+          "lineRange": [
+            1,
+            10
+          ],
+          "explanation": "Imports React hooks, router helpers (`Link`, `useParams`), toast notifications, many lucide icons, the shared API client, shared formatting and badge helpers from `components/common`, and the campus lists `ACADEMIC_BLOCKS` and `HOSTELS` used by the edit form's location pickers.",
+          "tourOrder": 13
+        },
+        {
+          "title": "Action labels and audit icons",
+          "lineRange": [
+            12,
+            30
+          ],
+          "explanation": "`actionLabel` turns a raw transition into friendly button text. The `IN_PROGRESS` target is special-cased because it means different things depending on where the incident comes from: reopening after RESOLVED, resuming after PENDING_INFO (with customer-specific wording) or starting work. Other targets use a lookup table with a generic fallback. `AUDIT_ICON` maps each audit action name to an emoji for the history timeline.",
+          "tourOrder": 13
+        },
+        {
+          "title": "State, loading and role flags",
+          "lineRange": [
+            32,
+            60
+          ],
+          "explanation": "The component keeps the loaded payload, an error message, the note being typed, which modal is open and the form state for resolving and closing. `load` is memoised on `id` and used both as the effect and as the refresh after every action. Once data is available it derives role flags (`isTech`, `isAdmin`, `isStaff`) and `canSelfAssign`, which is true only for a technician looking at an unassigned incident in CLASSIFIED or ASSIGNED.",
+          "tourOrder": 13
+        },
+        {
+          "title": "Action helpers",
+          "lineRange": [
+            62,
+            92
+          ],
+          "explanation": "`run` is a small wrapper used by every action: it sets `busy`, awaits the request, shows a success toast, closes any modal and reloads, or shows the error message on failure. `transition` posts to `/incidents/:id/transition`, and `onAction` intercepts RESOLVED and CLOSED to open a modal first, since those moves need a resolution summary or feedback. Notes are posted with a `kind` that depends on whether the author is staff or the reporter.",
+          "tourOrder": 13
+        },
+        {
+          "title": "Header and action bar",
+          "lineRange": [
+            94,
+            151
+          ],
+          "explanation": "The header shows the incident number, status and priority badges, a location pill, an escalation badge when the SLA monitor has escalated it, and the SLA status with time remaining. A warning callout tells a customer what to do when the incident is waiting on them (PENDING_INFO). The action bar combines self-assign for technicians, auto-dispatch for admins, one button per entry in `d.allowed_transitions`, and an Edit button for staff while the incident is open.",
+          "tourOrder": 13
+        },
+        {
+          "title": "Details, SLA and outcome panels",
+          "lineRange": [
+            153,
+            218
+          ],
+          "explanation": "Two key-value panels show reporter contact details and the classification/assignment data, including the priority score and the strategy that produced it. The SLA panel renders two `SlaBox` components (response and resolution) and, if present, the escalation history as badges. Resolution and closure cards appear only once those stages have happened, including the star rating left by the reporter.",
+          "tourOrder": 13
+        },
+        {
+          "title": "Staff-only intelligence panels",
+          "lineRange": [
+            220,
+            279
+          ],
+          "explanation": "Three panels are shown only to staff: suggested resolutions from similar past incidents (with a 'Use this fix' button that prefills the resolve form when RESOLVED is an allowed move), possible duplicates and related incidents (filtered so an incident is not listed twice), and smart technician recommendations with match scores. Admins can assign any recommended technician, while a technician can only pick up the incident for themselves. The backend also hides suggested resolutions from customers, so this page and the API agree."
+        },
+        {
+          "title": "Notes and history timeline",
+          "lineRange": [
+            281,
+            317
+          ],
+          "explanation": "The notes panel lists existing notes and, unless the incident is closed, a textarea whose placeholder changes with the user's role. The history panel renders the audit trail written by the audit observer (Step 8) as a timeline, showing actor, role and the previous-to-new state when a status change occurred. Closed incidents hide the note input because the backend treats them as read-only and would reject the request with 409.",
+          "tourOrder": 13
+        },
+        {
+          "title": "Resolve, close and edit modals",
+          "lineRange": [
+            319,
+            368
+          ],
+          "explanation": "The resolve modal requires a summary and optionally a root cause, then calls `transition('RESOLVED', ...)` with those fields. The close modal collects a 1-5 star rating through accessible radio-style buttons and an optional comment; an empty comment is sent as `undefined` so it is omitted from the JSON. The edit modal delegates to `EditIncident` and saves through a PATCH request."
+        },
+        {
+          "title": "SlaBox and EditIncident",
+          "lineRange": [
+            370,
+            438
+          ],
+          "explanation": "`SlaBox` derives a visual state (`ok`, `late` or `pending`) from whether the target was met and whether it was breached, and flags breaches as recorded SLA violations. `EditIncident` seeds a form from the incident and its nested location, then on submit sends only fields that actually changed (treating an empty string and a missing value as equal), and simply closes when nothing changed. The note at the bottom reminds staff that changing impact, urgency, criticality or affected people makes the backend recalculate priority and SLA."
+        }
+      ]
+    },
+    "backend/tests/conftest.py": {
+      "overview": "pytest's shared configuration for the backend test suite. It contains no fixtures; instead it sets environment variables at import time so that the application, when imported by the test modules, connects to a throwaway database and never reaches real external services. This is the isolation layer described in tour Step 14.",
+      "sections": [
+        {
+          "title": "Imports",
+          "lineRange": [
+            1,
+            3
+          ],
+          "explanation": "Only `os` and `tempfile` are needed: the file works purely by editing the process environment before the app is imported.",
+          "tourOrder": 14
+        },
+        {
+          "title": "Test environment overrides",
+          "lineRange": [
+            4,
+            12
+          ],
+          "explanation": "Because pytest loads `conftest.py` before the test modules, these assignments run before `server` and `app.core.db` read their settings. The comment explains the key trick: `load_dotenv()` does not override variables that are already set, so these values win over `backend/.env`. `DB_NAME` and `JWT_SECRET` use `setdefault` (a caller can still override them), while SMTP and all Gemini key variables are forcibly blanked so tests never send email or call the real API. Logs go to a fresh temporary directory.",
+          "tourOrder": 14
+        }
+      ]
+    },
+    "backend/tests/test_domain.py": {
+      "overview": "Fast unit tests for the pure domain layer: priority strategies, assignment strategies with capacity rules, and the State pattern's role-checked transitions. They need no database or HTTP client, constructing domain objects directly. The tests are written in a very compact style, often one assertion per line, and complement the end-to-end tests in test_features.py.",
+      "sections": [
+        {
+          "title": "Wildcard imports",
+          "lineRange": [
+            1,
+            4
+          ],
+          "explanation": "Star imports bring in the strategies, enums, `StateFactory` and exception classes. This keeps the tests short, though it hides where each name comes from; the names used (for example `PriorityInput`, `TechnicianProfile`, `InvalidStateTransitionError`) are defined in the domain modules covered in tour Steps 6 and 7.",
+          "tourOrder": 14
+        },
+        {
+          "title": "Core smoke tests",
+          "lineRange": [
+            5,
+            13
+          ],
+          "explanation": "Four compact tests: the weighted-score strategy maps maximum inputs to P1 and minimum inputs to P4; `PriorityInput` rejects an impact of 0 with `InvalidInputError`; NEW cannot jump straight to CLOSED even for an admin; and the skill-based strategy picks a technician whose skills match the incident category. `pytest` is imported inside each function that needs `pytest.raises`.",
+          "tourOrder": 14
+        },
+        {
+          "title": "Matrix priority and capacity",
+          "lineRange": [
+            15,
+            26
+          ],
+          "explanation": "The matrix priority tests check the impact/urgency grid at its corners and edges (P1 through P4). The capacity tests show that `LoadBalancedStrategy` refuses a technician who is at `max_concurrent` for a P3 incident by raising `TechnicianUnavailableError`, but allows the same technician for a P1, encoding the rule that critical incidents may exceed capacity. The smart strategy test checks that its ranking exposes a score breakdown with exactly five factors.",
+          "tourOrder": 14
+        },
+        {
+          "title": "State transition rules",
+          "lineRange": [
+            27,
+            32
+          ],
+          "explanation": "These tests exercise the State pattern directly through `StateFactory.get(...)`: CLOSED is terminal, a customer can verify a RESOLVED incident while a technician cannot (raising `UnauthorizedOperationError`), and a customer can move a PENDING_INFO incident back to IN_PROGRESS after supplying information. They pin down the role-dependent rules that IncidentDetail.js later presents as buttons.",
+          "tourOrder": 14
+        }
+      ]
+    },
+    "backend/tests/test_features.py": {
+      "overview": "End-to-end feature tests for the project brief. A few tests unit-check the OOP domain model, but most drive the real FastAPI app in-process through an httpx `ASGITransport` client, logging in as the seeded demo users and checking API responses, notifications, the audit trail and SLA violations in the test database. Together they verify the patterns from the tour (factories, State, Strategy, Observer-driven audit and notifications, SLA escalation, correlation) working together.",
+      "sections": [
+        {
+          "title": "Docstring and imports",
+          "lineRange": [
+            1,
+            20
+          ],
+          "explanation": "The docstring lists what is covered. The imports bring in the ASGI app, the composition-root `container` (so tests can inspect repositories and call the SLA monitor directly), `init_db`, enums, exceptions, domain classes and strategies. Importing `IncidentStatus as S` keeps status comparisons short.",
+          "tourOrder": 14
+        },
+        {
+          "title": "Fixtures and request helpers",
+          "lineRange": [
+            23,
+            60
+          ],
+          "explanation": "`anyio_backend` pins async tests to asyncio, and the module-scoped autouse `setup_db` fixture initialises the database (indexes and seed data) once, then restores default settings afterwards so tests that change strategies do not leak. `client()` builds an `AsyncClient` bound to the app with no network involved. Helpers `login`, `service_id`, `report` and `notifications_for` hide the boilerplate; `report` uses `time.time_ns()` in titles and sets `acknowledge_duplicate` so repeated runs are not blocked by duplicate detection.",
+          "tourOrder": 14
+        },
+        {
+          "title": "Domain model unit tests",
+          "lineRange": [
+            63,
+            129
+          ],
+          "explanation": "These synchronous tests check that `UserFactory` builds the right subclass and validates input, that `can_view` is polymorphic per user type, and that technician capacity is enforced at exactly the limit with a P1 override. They also confirm that a new incident starts in NEW and that the lifecycle rejects illegal or unauthorised moves, that service criticality raises the weighted priority, and that every registered assignment strategy can be swapped in through the factory and still returns a valid technician.",
+          "tourOrder": 14
+        },
+        {
+          "title": "Creation audit and strategy switching",
+          "lineRange": [
+            132,
+            170
+          ],
+          "explanation": "The first API test reports a high-impact incident on a critical service and checks the result is P1 and CLASSIFIED, that the audit trail records creation, classification, priority calculation and SLA application, and that admins receive a `critical` notification. The second test shows that an unknown strategy name is rejected with 422, that switching to `load` makes auto-assign choose the least-loaded technician, and that the audit entry mentions the strategy used, before switching back to `smart`.",
+          "tourOrder": 14
+        },
+        {
+          "title": "Notification lifecycle",
+          "lineRange": [
+            173,
+            203
+          ],
+          "explanation": "Walks an incident through assignment, acknowledgement, pending info, a customer note, resumption, resolution with a root cause, verification and closure. After each step it checks that the right person received the right notification kind (for example `assignment` for the technician, `info_requested` and `resolved` for the customer). It also checks that a feedback rating of 6 is rejected with 422 and that adding a note to a closed incident returns 409.",
+          "tourOrder": 14
+        },
+        {
+          "title": "SLA monitor and escalation",
+          "lineRange": [
+            206,
+            257
+          ],
+          "explanation": "Instead of waiting in real time, these tests call `container.sla_monitor.run_once(now=...)` with simulated timestamps after creation. They check the escalation ladder (level 1 Team Lead at more than 50% of the response window, level 2 with auto-dispatch once the SLA is breached, level 3 at 200%), that repeated runs do not duplicate violations, and that both response and resolution violations end up in the audit trail and admin listing. A second test checks that an at-risk P4 incident warns its assigned technician.",
+          "tourOrder": 14
+        },
+        {
+          "title": "Correlation and suggested fixes",
+          "lineRange": [
+            260,
+            296
+          ],
+          "explanation": "The correlation test creates a fresh service, reports four incidents on it and expects exactly one admin alert, a correlation cluster with count 4, related incidents on the detail page and an entry in the overview report. The suggested-resolution test resolves an Outlook crash, reports a similar one, and expects the first as the top suggestion for staff, while the customer sees an empty list."
+        },
+        {
+          "title": "Search filters and admin catalogue",
+          "lineRange": [
+            299,
+            357
+          ],
+          "explanation": "The search test loops over a dictionary of filters (text, status, priority, category, service, SLA status, date range, unassigned) and checks the new incident is found by each one, plus 422 for an unparseable date. The admin test checks that students get 403, that duplicate names return 409, that a service-specific SLA policy overrides the default and is used for a new incident, and that in-use services, categories and default SLA policies cannot be deleted."
+        },
+        {
+          "title": "Error paths and admin edits",
+          "lineRange": [
+            360,
+            407
+          ],
+          "explanation": "Covers failure handling: deleting the default P4 policy (restored in a `finally` block) makes incident creation fail with a 500 and a `MissingSlaConfigError` body; admins can edit technician skills (deduplicated) and capacity, and filter the audit log by action or incident; wrong passwords return 401 with `AuthenticationError`; a set of invalid report payloads return 404 or 422; and students cannot edit or auto-assign incidents (403)."
+        }
+      ]
+    },
+    "backend/tests/test_gemini.py": {
+      "overview": "Edge-case tests for the Gemini adapter in the intelligence service (tour Step 10). Most tests replace Google's API with `httpx.MockTransport`, so they run offline and can simulate malformed, hostile or failing replies; they check that the adapter either returns cleaned, range-limited data or returns `None` so the keyword classifier takes over. A middle group drives the API endpoints with a swapped-in fake adapter, and a final group of `live` tests calls the real API only when a key is configured and Google is reachable.",
+      "sections": [
+        {
+          "title": "Setup and mock helpers",
+          "lineRange": [
+            1,
+            52
+          ],
+          "explanation": "The docstring explains the offline/live split. `GOOD` is a valid model reply used as a baseline that tests modify with `{**GOOD, ...}`. `gemini_reply` wraps text in Gemini's response envelope, `adapter` builds a `GeminiAdapter` with a mock transport and no retry delay, and `answering` returns a handler that records every request in `handler.calls` and can simulate a JSON reply, an HTTP error status or a raised network exception. `classify` is a shortcut for the common call.",
+          "tourOrder": 14
+        },
+        {
+          "title": "Well-formed and slightly-off replies",
+          "lineRange": [
+            55,
+            116
+          ],
+          "explanation": "Checks that a valid reply is used and that the API key is sent only in the `x-goog-api-key` header, never in the URL, and that the user text is wrapped in `<report>` tags in the prompt. Other tests show the adapter's tolerance: JSON wrapped in markdown fences or prose is extracted, numbers given as words or strings are parsed, out-of-range values are clamped, categories are matched case-insensitively (unknown ones become `None`), missing or wrongly typed fields get safe defaults, and long or multi-line text is trimmed.",
+          "tourOrder": 14
+        },
+        {
+          "title": "Unusable replies and failures",
+          "lineRange": [
+            119,
+            176
+          ],
+          "explanation": "Each case here must return `None` so the caller falls back to keyword rules: truncated JSON, plain prose, JSON that is not an object, empty text, a safety-blocked prompt (which must also be logged), and HTTP bodies that are not the expected shape. The parametrised HTTP-error test checks that client errors (400-429) are not retried and that the log contains a helpful hint without leaking the key. Server errors (503) are retried exactly once, and timeouts or connection errors return `None`.",
+          "tourOrder": 14
+        },
+        {
+          "title": "Configuration and prompt safety",
+          "lineRange": [
+            179,
+            216
+          ],
+          "explanation": "`from_env` must return `None` when no usable key is set and must trim whitespace and default the model name. Model names that could alter the request URL (path traversal, query strings, spaces) are replaced by the default. The prompt is capped in length with control characters stripped, and a prompt-injection test shows that a hostile reply still produces only valid, clamped data while the prompt itself tells the model to ignore instructions inside the report."
+        },
+        {
+          "title": "API fixture and adapter swap",
+          "lineRange": [
+            219,
+            237
+          ],
+          "explanation": "The `api` fixture initialises the database, opens an in-process client logged in as the demo customer, and after the test restores `container.intel.classifier_factory` to `GeminiAdapter.from_env`. `use_gemini` replaces that factory with one that builds a mock-backed adapter. This is the composition root from Step 3 paying off: the service's collaborator is swapped in one line without touching application code."
+        },
+        {
+          "title": "Endpoint behaviour with Gemini",
+          "lineRange": [
+            240,
+            287
+          ],
+          "explanation": "Through the real `/api/intelligence` routes, these tests check that an unknown AI category falls back to the keyword category, that tiny AI-generated title or description fields are replaced with usable text, and that the endpoint still answers 200 (with the keyword classifier's lower confidence) when Gemini errors, is unreachable or returns garbage. Hindi, Telugu, emoji-heavy and maximum-length inputs must never break the endpoint, and descriptions that are empty, too short or too long are rejected with 422."
+        },
+        {
+          "title": "Live API tests",
+          "lineRange": [
+            290,
+            346
+          ],
+          "explanation": "`_live_key` reads `LLM_API_KEY` from `backend/.env` with `dotenv_values` (not from the environment, which conftest.py blanked), and `_reachable` also pings Google; the `live` marker skips these tests when either check fails. When they do run, they check that a real reply is valid, that a prompt-injection attempt still yields an allowed category and impact, that non-English or gibberish input is handled, and that an invalid key results in a clean `None`."
+        }
+      ]
+    },
+    "backend/.env.example": {
+      "overview": "Template for the backend's environment configuration. start.sh copies it to `backend/.env` on the first run (replacing `JWT_SECRET` with a random value), and docker-compose.yml loads it as the base env file for the backend container. It documents every setting the backend reads: database, CORS, authentication, seeded admin, Google sign-in, SMTP, Gemini and logging.",
+      "sections": [
+        {
+          "title": "Database, CORS and secrets",
+          "lineRange": [
+            1,
+            7
+          ],
+          "explanation": "`MONGO_URL` and `DB_NAME` point at a local MongoDB; docker-compose overrides the URL to reach the `mongo` service. `CORS_ORIGINS` allows the React dev server. `JWT_SECRET` is a placeholder that must be replaced, which start.sh does automatically. The comment on `TOTP_ENCRYPTION_KEY` warns that changing it (or changing `JWT_SECRET` while it is unset) invalidates stored authenticator-app secrets.",
+          "tourOrder": 15
+        },
+        {
+          "title": "Admin and sign-in settings",
+          "lineRange": [
+            8,
+            12
+          ],
+          "explanation": "`ADMIN_EMAIL` and `ADMIN_PASSWORD` define the seeded admin account used throughout the tests. `GOOGLE_CLIENT_ID` and `ALLOWED_EMAIL_DOMAIN` configure Google sign-in restricted to the campus email domain, and `COOKIE_SECURE=false` suits local HTTP development.",
+          "tourOrder": 15
+        },
+        {
+          "title": "Email and AI",
+          "lineRange": [
+            13,
+            19
+          ],
+          "explanation": "SMTP host and port are prefilled for Gmail, but the credentials are blank so real email is off by default. `LLM_API_KEY` is also blank, which makes the app use its built-in keyword rules; `LLM_MODEL` selects the Gemini model the adapter will call.",
+          "tourOrder": 15
+        },
+        {
+          "title": "Logging",
+          "lineRange": [
+            21,
+            25
+          ],
+          "explanation": "Logging settings referenced from the README's error-log section: the log level, an optional log directory, the threshold in milliseconds above which a request counts as slow, and whether to write full tracebacks.",
+          "tourOrder": 15
+        }
+      ]
+    },
+    "backend/Dockerfile": {
+      "overview": "Container image definition for the FastAPI backend, used by docker-compose.yml's `backend` service. It is a minimal six-line build on `python:3.12-slim` that installs the pinned requirements and runs the app with uvicorn on port 8000.",
+      "sections": [
+        {
+          "title": "Base image and dependencies",
+          "lineRange": [
+            1,
+            4
+          ],
+          "explanation": "Starts from the slim Python 3.12 image and sets `/app` as the working directory. `requirements.txt` is copied and installed on its own before the source code, so Docker can reuse the cached dependency layer when only code changes. `--no-cache-dir` keeps pip's download cache out of the image.",
+          "tourOrder": 15
+        },
+        {
+          "title": "Source and start command",
+          "lineRange": [
+            5,
+            6
+          ],
+          "explanation": "Copies the rest of the backend into the image and starts `uvicorn server:app` on `0.0.0.0:8000`, binding to all interfaces so the port is reachable from outside the container. docker-compose replaces this command with one that adds `--reload` for development.",
+          "tourOrder": 15
+        }
+      ]
+    },
+    "docker-compose.yml": {
+      "overview": "Docker Compose definition that runs the whole stack with only Docker installed: MongoDB 7, the FastAPI backend on port 8000 and the React dev server on port 3000. It is set up for development, with source folders bind-mounted and auto-reload enabled, and data persisted in a named volume. It is the Docker alternative to start.sh covered in tour Step 15.",
+      "sections": [
+        {
+          "title": "Usage notes",
+          "lineRange": [
+            1,
+            5
+          ],
+          "explanation": "The header comments give the two commands needed (`docker compose up --build` and `docker compose down`) and explain that settings come from the `.env.example` files, overridden by real `.env` files when they exist.",
+          "tourOrder": 15
+        },
+        {
+          "title": "MongoDB service",
+          "lineRange": [
+            6,
+            11
+          ],
+          "explanation": "Runs the official `mongo:7` image with `restart: unless-stopped`. Its data directory is stored in the named volume `mongo_data`, so incidents and users survive `docker compose down`. No port is published, because only the backend container needs to reach it.",
+          "tourOrder": 15
+        },
+        {
+          "title": "Backend service",
+          "lineRange": [
+            13,
+            30
+          ],
+          "explanation": "Builds from `./backend` (the Dockerfile) and layers two env files: the required example file, then the optional real `.env`. `MONGO_URL` is overridden to `mongodb://mongo:27017` because services reach each other by service name on the Compose network. The command adds `--reload`, and the app package, `server.py` and logs are bind-mounted so code changes on the host take effect without rebuilding.",
+          "tourOrder": 15
+        },
+        {
+          "title": "Frontend service",
+          "lineRange": [
+            32,
+            51
+          ],
+          "explanation": "Builds the React app from `./frontend` with the same two-level env-file setup. `REACT_APP_BACKEND_URL` is empty so the browser calls `/api` on the same origin, and `BACKEND_PROXY_TARGET` tells the dev-server proxy (setupProxy.js) to forward those calls to `http://backend:8000`. `WATCHPACK_POLLING` makes file watching work through bind mounts, and `BROWSER: none` stops the dev server trying to open a browser inside the container.",
+          "tourOrder": 15
+        },
+        {
+          "title": "Named volume",
+          "lineRange": [
+            53,
+            54
+          ],
+          "explanation": "Declares the `mongo_data` volume used by the MongoDB service. Docker manages its storage, so it persists across container restarts and rebuilds until removed explicitly.",
+          "tourOrder": 15
+        }
+      ]
+    },
+    "start.sh": {
+      "overview": "One-command setup and launch script for macOS and Linux. On the first run it creates the `.env` files, the Python virtual environment and `node_modules`; on every run it reinstalls only what changed, makes sure MongoDB is running, starts the backend and frontend, optionally opens a public ngrok tunnel and prints the links. Ctrl+C stops everything it started. It is the non-Docker path described in tour Step 15.",
+      "sections": [
+        {
+          "title": "Header and helpers",
+          "lineRange": [
+            1,
+            21
+          ],
+          "explanation": "The comments document usage (`--local` skips ngrok) and the optional `NGROK_URL` setting. The script moves to its own directory so it works from anywhere, creates `logs/`, and defines small helpers: `say` prints bold status lines, `fail` prints red and exits, and `env_value` reads one key from an env file, stripping quotes, spaces and carriage returns.",
+          "tourOrder": 15
+        },
+        {
+          "title": "Tool checks",
+          "lineRange": [
+            23,
+            29
+          ],
+          "explanation": "Tries several Python executables in order and keeps the first one that is at least 3.10, verified by actually running a version check. If no suitable Python or no `npm` is found, it stops with an install hint rather than failing later with a confusing error.",
+          "tourOrder": 15
+        },
+        {
+          "title": "Create settings files",
+          "lineRange": [
+            31,
+            41
+          ],
+          "explanation": "If `backend/.env` is missing, an inline Python heredoc copies `.env.example` and replaces the `JWT_SECRET` line with `secrets.token_urlsafe(48)`, so every installation gets its own random signing secret. `frontend/.env` is simply copied from its example. Existing files are never overwritten.",
+          "tourOrder": 15
+        },
+        {
+          "title": "Backend virtualenv",
+          "lineRange": [
+            43,
+            56
+          ],
+          "explanation": "If the venv's Python cannot run (missing, or copied from another machine), the venv is deleted and recreated. Packages are reinstalled only when `requirements.txt` differs from a stamp copy saved inside the venv (`cmp -s`), which makes repeat runs fast while still picking up dependency changes.",
+          "tourOrder": 15
+        },
+        {
+          "title": "Frontend packages",
+          "lineRange": [
+            58,
+            63
+          ],
+          "explanation": "Uses the same stamp-file technique: `npm install` runs only when `package.json` differs from the copy saved in `node_modules`. The install runs in a subshell so the `cd` does not affect the rest of the script."
+        },
+        {
+          "title": "Ensure MongoDB is running",
+          "lineRange": [
+            65,
+            84
+          ],
+          "explanation": "`port_open` probes a TCP port using bash's `/dev/tcp` feature, with no extra tools. If `MONGO_URL` points at localhost and port 27017 is closed, the script tries Homebrew's `mongodb-community` service, otherwise starts or creates a `bits-mongo` Docker container, then waits up to 20 seconds. If MongoDB still is not reachable it exits with installation instructions.",
+          "tourOrder": 15
+        },
+        {
+          "title": "Cleanup trap and server start",
+          "lineRange": [
+            86,
+            109
+          ],
+          "explanation": "`stop_all` is registered on INT, TERM and EXIT; it removes the trap first to avoid running twice, then kills each background process and its children. `free_port` uses `lsof` to kill leftovers from an earlier run on ports 8000, 3000 and (when sharing) 4040. The backend (uvicorn with `--reload`) and frontend (`npm start`) are launched in background subshells using `exec`, and their PIDs are stored for cleanup.",
+          "tourOrder": 15
+        },
+        {
+          "title": "Optional ngrok tunnel",
+          "lineRange": [
+            111,
+            148
+          ],
+          "explanation": "`public_url` queries ngrok's local API and extracts the first HTTPS tunnel using a one-line Python JSON parser. `start_ngrok` launches ngrok for port 3000 (optionally with a fixed URL) and polls for up to 20 seconds, giving up early if the process dies. If a pinned URL fails, which happens when it belongs to another ngrok account, the script retries without it; on failure it shows the end of the ngrok log and an authtoken hint, and on success saves the URL to `logs/public-url.txt`."
+        },
+        {
+          "title": "Ready banner and wait",
+          "lineRange": [
+            150,
+            165
+          ],
+          "explanation": "Because the React dev server clears the terminal when it finishes compiling, the script waits for port 3000 to answer (plus a few seconds) before printing the banner, so the links stay visible. The banner shows the local URL and, if available, the public URL along with the Google redirect URI that must be registered for sign-in to work there. `wait` keeps the script alive until the servers exit or the user presses Ctrl+C."
+        }
+      ]
+    },
+    "backend/app/routers/__init__.py": {
+      "overview": "Empty package marker for the FastAPI routers package; server.py imports the individual router modules from it.",
+      "sections": []
+    },
+    "backend/app/routers/client_errors.py": {
+      "overview": "FastAPI router that receives crash reports from the React frontend (render errors, uncaught errors, unhandled rejections), rate-limits them per IP and writes them to errors.log alongside backend errors.",
+      "sections": []
+    },
+    "backend/app/routers/docs.py": {
+      "overview": "Authenticated FastAPI endpoint returning in-app documentation about the incident lifecycle, the design patterns used and the intelligent features.",
+      "sections": []
+    },
+    "backend/tests/test_api_flow.py": {
+      "overview": "End-to-end API tests covering role logins, the full incident lifecycle, BITS student registration restrictions, admin user creation and campus location/intelligence handling against a clean test database.",
+      "sections": []
+    },
+    "backend/tests/test_autofill.py": {
+      "overview": "Tests keyword-based category and service autofill suggestions (IT vs hostel repair categories, whole-word matching, ranking) and the suggest API endpoint.",
+      "sections": []
+    },
+    "backend/tests/test_bug_fixes.py": {
+      "overview": "Regression tests for bugs fixed on 2026-11-01: password-reset enumeration, audit trail by incident number, reopen and SLA resume, resolution validation, technician isolation, priority recalculation, admin self-deactivation, reporting counts, classifier matching and Google account login.",
+      "sections": []
+    },
+    "backend/tests/test_duplicates_and_sla_defaults.py": {
+      "overview": "Tests concept-based duplicate detection across different wordings, the duplicate warning via the API, the default SLA targets from the project brief, upgrade of old seeded defaults, and P1 SLA at-risk evaluation.",
+      "sections": []
+    },
+    "backend/tests/test_error_logging.py": {
+      "overview": "Tests that unhandled errors return a reference and are logged fully, validation errors never leak passwords, business-rule errors explain why and where, browser errors are recorded, and MongoDB outages are explained.",
+      "sections": []
+    },
+    "backend/tests/test_form_autofill.py": {
+      "overview": "Tests that generate-details fills the whole report form (category, service, impact, urgency, criticality, location) with and without AI, plus campus location extraction and criticality estimation rules.",
+      "sections": []
+    },
+    "backend/tests/test_scope_api.py": {
+      "overview": "API tests for non-IT/emergency scope detection with and without AI: blocking non-IT submissions with guidance, reporter override, AI fallbacks and the safety-first rule that AI cannot override a detected crisis.",
+      "sections": []
+    },
+    "backend/tests/test_scope_rules.py": {
+      "overview": "Offline tests of the rule-based scope classifier using real-world phrasings that must stay IT tickets or must trigger emergency/non-IT guidance, plus AI answer parsing and safety-first combination.",
+      "sections": []
+    },
+    "frontend/src/components/EditUserModal.js": {
+      "overview": "Admin modal for editing a user's name and phone, plus skills and maximum concurrent incidents for technicians, saved via PATCH /admin/users/{id}.",
+      "sections": []
+    },
+    "frontend/src/components/IncidentFilters.js": {
+      "overview": "Search and filter bar for the incident list covering text, status, priority, category, service, technician, SLA status, date range and escalation, loading catalogue options from the backend.",
+      "sections": []
+    },
+    "frontend/src/components/NonItNotice.js": {
+      "overview": "Popup, contact list and inline banner shown when a report is detected as a non-IT emergency (medical, mental health, fire, security), directing the user to the right phone contacts.",
+      "sections": []
+    },
+    "frontend/src/components/campus.js": {
+      "overview": "Static campus reference data shared by the report form and incident editor: academic blocks, hostels, technician skills and offline repair categories mapped to support services.",
+      "sections": []
+    },
+    "frontend/src/components/issueTypes.js": {
+      "overview": "Catalogue of common campus issue templates (Wi-Fi, LAN, login, etc.) offered as one-click shortcuts on the report form, each mapped to mode, category, service, title and hint, with a lookup by key.",
+      "sections": []
+    },
+    "frontend/src/googleSignIn.js": {
+      "overview": "Google sign-in via full-page OpenID Connect implicit-flow redirect: builds the authorization URL with state/nonce, validates the secure-origin requirement, and parses the id_token returned in the URL hash.",
+      "sections": []
+    },
+    "frontend/src/pages/Account.js": {
+      "overview": "Self-service account page with panels for profile, password change, authenticator-app two-factor setup and backup codes, notification preferences, active sessions and recent security activity.",
+      "sections": []
+    },
+    "frontend/src/pages/AuditLog.js": {
+      "overview": "Admin page with a filterable audit trail of system actions and a list of recorded SLA violations.",
+      "sections": []
+    },
+    "backend/app/services/audit.py": {
+      "overview": "Backwards-compatibility shim re-exporting AuditRepository as AuditLogger; the audit trail now lives in the repositories module and is written by an observer.",
+      "sections": []
+    },
+    "backend/app/routers/account.py": {
+      "overview": "FastAPI router for the signed-in user's account and security page: profile edits, password change, authenticator-app (TOTP) setup/enable/disable, backup codes, email preferences, sign-out-everywhere, and recent security activity.",
+      "sections": []
+    },
+    "backend/app/routers/catalog.py": {
+      "overview": "Small read-only catalog router listing IT services, incident categories, and active technicians (staff-only) for form pickers and filters.",
+      "sections": []
+    },
+    "backend/app/routers/notifications.py": {
+      "overview": "In-app notifications router that lists a user's latest 50 notifications with an unread count and marks one or all notifications as read directly in MongoDB.",
+      "sections": []
+    },
+    "backend/app/routers/reports.py": {
+      "overview": "Reporting dashboard router whose single overview endpoint aggregates incident totals, status/priority/category/service breakdowns, SLA compliance, technician workload, recent SLA violations and correlation clusters for staff.",
+      "sections": []
+    },
+    "backend/app/services/__init__.py": {
+      "overview": "Empty package initializer marking backend/app/services as a Python package.",
+      "sections": []
+    },
+    "backend/app/services/two_factor.py": {
+      "overview": "TOTP two-factor authentication: Fernet-encrypted secrets, HMAC-hashed backup codes, QR provisioning, time-step matching, polymorphic TOTP/backup-code factors and a TwoFactorService with replay protection and brute-force lockout.",
+      "sections": []
+    },
+    "backend/tests/test_account_security.py": {
+      "overview": "Pytest suite for account security: TOTP encryption and code windows, email preferences, 2FA setup/sign-in/lockout/disable, authenticator password reset, password change, session sign-out, profile/preferences and admin 2FA controls via the HTTP API.",
+      "sections": []
+    },
+    "backend/.dockerignore": {
+      "overview": "Docker build-context exclusion list for the backend image, keeping the local virtualenv, Python bytecode, pytest cache, log files, the secret-bearing .env and macOS metadata out of the container.",
+      "sections": []
+    },
+    "frontend/.dockerignore": {
+      "overview": "Docker build-context exclusion list for the React frontend image, omitting node_modules, the production build output, the local .env and macOS metadata.",
+      "sections": []
+    },
+    "frontend/Dockerfile": {
+      "overview": "Single-stage node:20 image for the React frontend that installs npm dependencies from package*.json, copies the source and runs the development server via npm start.",
+      "sections": []
+    },
+    "start.bat": {
+      "overview": "Double-clickable Windows launcher that runs start.ps1 through PowerShell with the execution policy bypassed, forwarding arguments such as -Local and pausing on failure.",
+      "sections": []
+    },
+    "start.ps1": {
+      "overview": "Windows one-command setup and launch script: finds Python 3.10+ and Node, creates .env files with a generated JWT secret, (re)builds the backend venv and installs packages only when requirements change, starts MongoDB via service or Docker, launches backend and frontend in separate windows and optionally opens an ngrok public link.",
+      "sections": []
+    },
+    "backend/app/__init__.py": {
+      "overview": "Empty package marker that makes `app` an importable Python package; it contains no code or re-exports.",
+      "sections": []
+    },
+    "backend/app/core/__init__.py": {
+      "overview": "Empty package marker that makes `app/core` an importable Python package; it contains no code or re-exports.",
+      "sections": []
+    },
+    "backend/app/domain/__init__.py": {
+      "overview": "Empty package marker that makes `app/domain` an importable Python package; it contains no code or re-exports.",
+      "sections": []
+    },
+    "backend/app/models/__init__.py": {
+      "overview": "Empty package marker that makes `app/models` an importable Python package; it contains no code or re-exports.",
+      "sections": []
+    },
+    "frontend/.env.example": {
+      "overview": "Template of frontend build-time environment variables: REACT_APP_BACKEND_URL for the API base URL and REACT_APP_GOOGLE_CLIENT_ID for Google sign-in.",
+      "sections": []
+    },
+    "frontend/package.json": {
+      "overview": "Create React App manifest for the BITS reports frontend, defining start/build/test scripts via react-scripts and dependencies on React 18, react-router-dom, axios, recharts, lucide-react, sonner and Testing Library, plus browserslist targets.",
+      "sections": []
+    },
+    "frontend/public/index.html": {
+      "overview": "HTML shell for the React single-page app: sets the 'BITS reports | Campus IT Support' title, theme color and viewport, preloads Google Fonts (JetBrains Mono, Outfit, Plus Jakarta Sans, Syne), and provides the #root mount point with a noscript fallback.",
+      "sections": []
+    },
+    "frontend/src/index.css": {
+      "overview": "Global stylesheet for the entire frontend: CSS custom-property theme tokens and fonts, the fixed-sidebar app shell, login and account pages, dashboards, metrics, panels, modals, filters, incident timelines, SLA/severity badges and AI-assist UI, a warm palette override, a .dark-mode theme, and responsive breakpoints at 960px and 640px.",
+      "sections": []
+    }
+  }
+}
